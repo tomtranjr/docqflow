@@ -40,6 +40,8 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 
 3. Open `http://localhost:8000/docs` to see the interactive API docs.
 
+For more details on training, prediction, and how the model works, see [docs/model-training.md](docs/model-training.md).
+
 ## Running with Docker
 
 1. Build the image:
