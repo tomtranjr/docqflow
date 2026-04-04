@@ -34,6 +34,8 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
    uv run python classify.py train --data-dir data
    ```
 
+   For the full training guide (folder structure, CLI options, how the model works, and MLflow logging), see [docs/model-training.md](docs/model-training.md).
+
 2. Start the API server:
 
    ```bash
@@ -58,25 +60,7 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 
 The API will be available at [http://localhost:8000](http://localhost:8000).
 
-## Pushing to Google Artifact Registry
-
-1. Authenticate Docker with Artifact Registry:
-
-   ```bash
-   gcloud auth configure-docker us-central1-docker.pkg.dev
-   ```
-
-2. Tag the image:
-
-   ```bash
-   docker tag docqflow us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
-   ```
-
-3. Push the image:
-
-   ```bash
-   docker push us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
-   ```
+To push the image to Google Artifact Registry, see [docs/docker-registry.md](docs/docker-registry.md).
 
 ## API Endpoints
 
@@ -133,13 +117,7 @@ If the PDF has no extractable text, you'll get a 422 error:
 
 ## MLflow Tracking
 
-Training runs are logged to a remote MLflow server. The tracking URI is set via the `MLFLOW_TRACKING_URI` environment variable in `.env`.
-
-Each training run logs to the `doc-classifier` experiment with:
-
-- **Params**: `max_features`, `ngram_range`, `max_iter`, `train_size`, `test_size`
-- **Metrics**: `accuracy`, `macro_precision`, `macro_recall`, `macro_f1`
-- **Artifacts**: the trained scikit-learn model
+Training runs are logged to a remote MLflow server (set `MLFLOW_TRACKING_URI` in `.env`). Each run records parameters, metrics, and the trained model artifact. See [docs/model-training.md](docs/model-training.md) for the full list of logged values.
 
 ## Project Structure
 
@@ -153,5 +131,7 @@ docqflow/
 ├── .env             # Environment variables (MLFLOW_TRACKING_URI)
 ├── models/          # Trained model artifacts (model.joblib)
 ├── data/            # Training PDFs organized by class folder
-└── docs/            # Additional documentation
+└── docs/
+    ├── model-training.md    # Training guide, CLI options, and MLflow logging
+    └── docker-registry.md   # Pushing images to Google Artifact Registry
 ```
