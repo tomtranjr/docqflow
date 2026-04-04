@@ -51,9 +51,13 @@ def extract_text_from_bytes(pdf_bytes: bytes) -> str:
     return text
 
 
-def load_model(model_path: str = "models/model.joblib") -> Pipeline:
-    """Load a trained model pipeline from disk."""
-    return joblib.load(model_path)
+def load_model(model_path: str = "models/model.joblib") -> Pipeline | None:
+    """Load a trained model pipeline from disk. Returns None if not found."""
+    try:
+        return joblib.load(model_path)
+    except FileNotFoundError:
+        print(f"Model not found at {model_path}. Train a model first.")
+        return None
 
 
 def predict_from_text(pipeline: Pipeline, text: str) -> dict:
