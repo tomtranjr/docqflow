@@ -56,7 +56,10 @@ def fetch_permits(count: int, offset: int = 0) -> list[dict]:
         List of permit record dicts from the API.
     """
     select = ",".join(SODA_FIELDS)
-    where = "permit_type in('3','8') AND status in('issued','complete')"
+    where = (
+        "permit_type in('3','8') AND status in('issued','complete') "
+        "AND issued_date IS NOT NULL"
+    )
 
     params = {
         "$select": select,
