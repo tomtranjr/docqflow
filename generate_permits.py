@@ -40,40 +40,30 @@ SODA_FIELDS = [
 ]
 
 
-def get_existing_permit_numbers(output_dir: str) -> set[str]:
-    """Scan output directory for already-generated permit PDFs."""
-    existing = set()
-    for pdf in Path(output_dir).glob("permit_*.pdf"):
-        match = re.match(r"permit_(\d+)\.pdf", pdf.name)
-        if match:
-            existing.add(match.group(1))
-    return existing
+def count_existing_permits(output_dir: str) -> int:
+    """Count already-generated permit PDFs in the output directory."""
+    return len(list(Path(output_dir).glob("permit_*.pdf")))
 
 
-def fetch_permits(count: int, exclude: set[str]) -> list[dict]:
+def fetch_permits(count: int, offset: int = 0) -> list[dict]:
     """Fetch permit records from the SODA API.
 
     Args:
         count: Number of permits desired.
-        exclude: Permit numbers to skip (already generated).
+        offset: Number of records to skip (for pagination).
 
     Returns:
         List of permit record dicts from the API.
     """
     select = ",".join(SODA_FIELDS)
-    where_parts = [
-        "permit_type in('3','8')",
-        "status in('issued','complete')",
-    ]
-    if exclude:
-        quoted = ",".join(f"'{n}'" for n in exclude)
-        where_parts.append(f"permit_number NOT IN({quoted})")
+    where = "permit_type in('3','8') AND status in('issued','complete')"
 
     params = {
         "$select": select,
-        "$where": " AND ".join(where_parts),
+        "$where": where,
         "$order": "issued_date DESC",
         "$limit": count * 2,
+        "$offset": offset,
     }
 
     for attempt in range(3):
@@ -234,6 +224,13 @@ def map_to_fields(record: dict, contractor: dict | None) -> dict:
     """
     fields = {}
 
+    # Form type checkbox: Check Box8 = Form 3, Check Box9 = Form 8
+    permit_type = record.get("permit_type", "")
+    if permit_type == "3":
+        fields["Check Box8"] = "/Yes"
+    elif permit_type == "8":
+        fields["Check Box9"] = "/Yes"
+
     # Core permit info
     fields["APPLICATION NUMBER"] = record.get("permit_number", "")
     fields["DATE FILED"] = format_date(record.get("filed_date", ""))
@@ -363,13 +360,13 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check what we already have
-    existing = get_existing_permit_numbers(args.output_dir)
-    if existing:
-        logger.info("Found %d existing permits, will skip those", len(existing))
+    # Use existing permit count as offset for pagination
+    existing_count = count_existing_permits(args.output_dir)
+    if existing_count:
+        logger.info("Found %d existing permits, offsetting to fetch next batch", existing_count)
 
     # Fetch permits from SODA API
-    records = fetch_permits(args.count, existing)
+    records = fetch_permits(args.count, offset=existing_count)
     if not records:
         logger.error("No records fetched from SODA API")
         return
