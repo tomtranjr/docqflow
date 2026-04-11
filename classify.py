@@ -205,6 +205,7 @@ def predict(model_path: str, pdf_path: str) -> dict:
 
 
 def main():
+    """Parse CLI arguments and dispatch to train or predict subcommand."""
     parser = argparse.ArgumentParser(description="PDF document classifier")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
