@@ -27,7 +27,7 @@ Two hooks run on every commit:
 - **ruff-check** — checks for common Python errors, unused imports, and import ordering
 - **ruff-format** — checks that code follows consistent formatting
 
-If a hook fails, the commit is blocked. Read the error output, fix the issue, `git add` your changes, and commit again.
+If a hook fails, the commit is blocked. Review the error output, fix the issue, `git add` your changes, and commit again.
 
 ### Running checks manually
 
