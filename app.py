@@ -14,7 +14,9 @@ class PredictionResponse(BaseModel):
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to DocQFlow — a highly super crazy, amazing, intelligent PDF document classifier and processor."}
+    return {
+        "message": "Welcome to DocQFlow — a highly super crazy, amazing, intelligent PDF document classifier and processor."
+    }
 
 
 @app.get("/health")
@@ -25,7 +27,9 @@ def health():
 @app.post("/predict", response_model=PredictionResponse)
 async def predict_pdf(file: UploadFile):
     if pipeline is None:
-        raise HTTPException(status_code=503, detail="Model not loaded. Train a model first.")
+        raise HTTPException(
+            status_code=503, detail="Model not loaded. Train a model first."
+        )
 
     pdf_bytes = await file.read()
     text = extract_text_from_bytes(pdf_bytes)
