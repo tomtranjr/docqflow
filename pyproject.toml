@@ -30,6 +30,7 @@ notebook = [
 dev = [
     "pre-commit>=4.2.0",
     "pytest>=9.0.2",
+    "ruff>=0.11.6",
 ]
 
 [tool.ruff]
