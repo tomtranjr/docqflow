@@ -24,7 +24,7 @@ This project uses [pre-commit](https://pre-commit.com/) to run code checks autom
 
 Two hooks run on every commit:
 
-- **ruff** — checks for common Python errors, unused imports, and import ordering
+- **ruff-check** — checks for common Python errors, unused imports, and import ordering
 - **ruff-format** — checks that code follows consistent formatting
 
 If a hook fails, the commit is blocked. Read the error output, fix the issue, `git add` your changes, and commit again.
