@@ -119,19 +119,25 @@ If the PDF has no extractable text, you'll get a 422 error:
 
 Training runs are logged to a remote MLflow server (set `MLFLOW_TRACKING_URI` in `.env`). Each run records parameters, metrics, and the trained model artifact. See [docs/model-training.md](docs/model-training.md) for the full list of logged values.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, pre-commit hooks, and code style guidelines.
+
 ## Project Structure
 
 ```text
 docqflow/
-├── app.py           # FastAPI endpoints (/, /health, /predict)
-├── classify.py      # Model training, prediction, and text extraction
-├── main.py          # MLflow connection test script
-├── Dockerfile       # Container setup for the classifier API
-├── pyproject.toml   # Project metadata and dependencies
-├── .env             # Environment variables (MLFLOW_TRACKING_URI)
-├── models/          # Trained model artifacts (model.joblib)
-├── data/            # Training PDFs organized by class folder
+├── app.py                    # FastAPI endpoints (/, /health, /predict)
+├── classify.py               # Model training, prediction, and text extraction
+├── main.py                   # MLflow connection test script
+├── Dockerfile                # Container setup for the classifier API
+├── pyproject.toml            # Project metadata and dependencies
+├── .pre-commit-config.yaml   # Pre-commit hook configuration
+├── CONTRIBUTING.md           # Development setup and code style guide
+├── .env                      # Environment variables (MLFLOW_TRACKING_URI)
+├── models/                   # Trained model artifacts (model.joblib)
+├── data/                     # Training PDFs organized by class folder
 └── docs/
-    ├── model-training.md    # Training guide, CLI options, and MLflow logging
-    └── docker-registry.md   # Pushing images to Google Artifact Registry
+    ├── model-training.md     # Training guide, CLI options, and MLflow logging
+    └── docker-registry.md    # Pushing images to Google Artifact Registry
 ```
