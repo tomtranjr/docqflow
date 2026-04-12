@@ -7,6 +7,7 @@ load_dotenv()
 
 
 def main():
+    """Test the MLflow connection using MLFLOW_TRACKING_URI from the environment."""
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if not tracking_uri:
         print("Error: MLFLOW_TRACKING_URI not set in .env")

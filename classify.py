@@ -103,17 +103,25 @@ def load_labeled_data(data_dir: str) -> tuple[list[str], list[str]]:
 
 def build_pipeline() -> Pipeline:
     """Build a TF-IDF + Logistic Regression pipeline."""
-    return Pipeline([
-        ("tfidf", TfidfVectorizer(
-            max_features=5000,
-            stop_words="english",
-            ngram_range=(1, 2),
-        )),
-        ("clf", LogisticRegression(
-            class_weight="balanced",
-            max_iter=1000,
-        )),
-    ])
+    return Pipeline(
+        [
+            (
+                "tfidf",
+                TfidfVectorizer(
+                    max_features=5000,
+                    stop_words="english",
+                    ngram_range=(1, 2),
+                ),
+            ),
+            (
+                "clf",
+                LogisticRegression(
+                    class_weight="balanced",
+                    max_iter=1000,
+                ),
+            ),
+        ]
+    )
 
 
 def train(data_dir: str, model_path: str) -> dict:
@@ -126,11 +134,15 @@ def train(data_dir: str, model_path: str) -> dict:
     texts, labels = load_labeled_data(data_dir)
 
     if len(texts) < 4:
-        print(f"Only found {len(texts)} documents. Need at least 4 for train/test split.")
+        print(
+            f"Only found {len(texts)} documents. Need at least 4 for train/test split."
+        )
         return {}
 
     unique_labels = set(labels)
-    print(f"\nFound {len(texts)} documents across {len(unique_labels)} classes: {unique_labels}")
+    print(
+        f"\nFound {len(texts)} documents across {len(unique_labels)} classes: {unique_labels}"
+    )
 
     X_train, X_test, y_train, y_test = train_test_split(
         texts, labels, test_size=0.2, stratify=labels, random_state=42
@@ -193,16 +205,29 @@ def predict(model_path: str, pdf_path: str) -> dict:
 
 
 def main():
+    """Parse CLI arguments and dispatch to train or predict subcommand."""
     parser = argparse.ArgumentParser(description="PDF document classifier")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     train_parser = subparsers.add_parser("train", help="Train the classifier")
-    train_parser.add_argument("--data-dir", required=True, help="Directory with labeled subdirectories of PDFs")
-    train_parser.add_argument("--model-path", default="models/model.joblib", help="Where to save the trained model")
+    train_parser.add_argument(
+        "--data-dir",
+        required=True,
+        help="Directory with labeled subdirectories of PDFs",
+    )
+    train_parser.add_argument(
+        "--model-path",
+        default="models/model.joblib",
+        help="Where to save the trained model",
+    )
 
     predict_parser = subparsers.add_parser("predict", help="Classify a PDF")
-    predict_parser.add_argument("--model-path", default="models/model.joblib", help="Path to trained model")
-    predict_parser.add_argument("--pdf-path", required=True, help="PDF file to classify")
+    predict_parser.add_argument(
+        "--model-path", default="models/model.joblib", help="Path to trained model"
+    )
+    predict_parser.add_argument(
+        "--pdf-path", required=True, help="PDF file to classify"
+    )
 
     args = parser.parse_args()
 
