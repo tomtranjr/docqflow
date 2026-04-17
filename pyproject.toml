@@ -13,6 +13,7 @@ dependencies = [
     "python-multipart>=0.0.22",
     "scikit-learn>=1.8.0",
     "uvicorn>=0.42.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [project.optional-dependencies]
