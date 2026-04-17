@@ -31,7 +31,12 @@ async def predict_pdf(file: UploadFile):
         )
 
     pdf_bytes = await file.read()
-    text = extract_text_from_bytes(pdf_bytes)
+    try:
+        text = extract_text_from_bytes(pdf_bytes)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422, detail="File is not a readable PDF"
+        ) from exc
 
     if not text.strip():
         raise HTTPException(status_code=422, detail="PDF valid but not processable")
