@@ -12,7 +12,12 @@ const ThemeContext = createContext<ThemeContextType | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('docqflow-theme') as Theme) || 'system'
+    const stored = localStorage.getItem('docqflow-theme')
+    const validThemes: Theme[] = ['light', 'dark', 'system']
+    if (stored && validThemes.includes(stored as Theme)) {
+      return stored as Theme
+    }
+    return 'system'
   })
 
   const [systemDark, setSystemDark] = useState(

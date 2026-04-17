@@ -14,22 +14,33 @@ export function Classify() {
     if (done.length === 0) return
 
     const escapeCSV = (val: string | number) => {
-      const str = String(val)
+      let str = String(val)
+      // Neutralize formula injection by prefixing leading special characters
+      if (str.length > 0 && ['=', '+', '-', '@'].includes(str[0])) {
+        str = "'" + str
+      }
       if (str.includes(',') || str.includes('"') || str.includes('\n')) {
         return `"${str.replace(/"/g, '""')}"`
       }
       return str
     }
 
-    const headers = ['Filename', 'Label', 'Confidence', ...Object.keys(done[0].result!.probabilities)]
+    // Collect all unique class keys in deterministic order
+    const orderedKeysSet = new Set<string>()
+    done.forEach((i) => {
+      Object.keys(i.result!.probabilities).forEach((key) => orderedKeysSet.add(key))
+    })
+    const orderedKeys = Array.from(orderedKeysSet).sort()
+
+    const headers = ['Filename', 'Label', 'Confidence', ...orderedKeys]
     const rows = done.map((i) => {
-      const probs = Object.values(i.result!.probabilities)
-      const confidence = probs.length > 0 ? Math.max(...probs) : 0
+      const probValues = orderedKeys.map((key) => i.result!.probabilities[key] ?? 0)
+      const confidence = probValues.length > 0 ? Math.max(...probValues) : 0
       return [
         escapeCSV(i.file.name),
         escapeCSV(i.result!.label),
         escapeCSV(confidence),
-        ...probs.map((p) => escapeCSV(p)),
+        ...probValues.map((p) => escapeCSV(p)),
       ]
     })
     const csv = [headers.map(escapeCSV), ...rows].map((r) => r.join(',')).join('\n')
