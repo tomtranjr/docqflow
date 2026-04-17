@@ -1,8 +1,13 @@
-import { useRouteError, Link } from 'react-router-dom'
+import { useRouteError, Link, isRouteErrorResponse } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 
 export function ErrorBoundary() {
-  const error = useRouteError() as Error
+  const error = useRouteError()
+  const message = isRouteErrorResponse(error)
+    ? `${error.status} ${error.statusText}`
+    : error instanceof Error
+      ? error.message
+      : 'An unexpected error occurred'
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
@@ -11,7 +16,7 @@ export function ErrorBoundary() {
         Something went wrong
       </h1>
       <p className="text-sm text-[var(--color-text-secondary)]">
-        {error?.message || 'An unexpected error occurred'}
+        {message}
       </p>
       <Link
         to="/"

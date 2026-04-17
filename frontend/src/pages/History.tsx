@@ -34,6 +34,7 @@ export function History() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-secondary)]" />
           <input
             type="text"
+            aria-label="Search history by filename"
             placeholder="Search by filename..."
             value={search}
             onChange={(e) => {
@@ -44,6 +45,7 @@ export function History() {
           />
         </div>
         <select
+          aria-label="Filter history by classification label"
           value={label}
           onChange={(e) => {
             setLabel(e.target.value)

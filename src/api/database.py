@@ -56,7 +56,14 @@ async def save_classification(
             "INSERT INTO classifications "
             "(filename, label, confidence, probabilities, text_preview, file_size) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            (filename, label, confidence, json.dumps(probabilities), text_preview, file_size),
+            (
+                filename,
+                label,
+                confidence,
+                json.dumps(probabilities),
+                text_preview,
+                file_size,
+            ),
         )
         await db.commit()
     finally:
@@ -69,6 +76,11 @@ async def get_history(
     label: str | None = None,
     search: str | None = None,
 ) -> dict:
+    if page < 1:
+        raise ValueError("page must be >= 1")
+    if limit < 1:
+        raise ValueError("limit must be >= 1")
+
     db = await get_db()
     try:
         where_clauses: list[str] = []
@@ -78,8 +90,11 @@ async def get_history(
             where_clauses.append("label = ?")
             params.append(label)
         if search:
-            where_clauses.append("filename LIKE ?")
-            params.append(f"%{search}%")
+            escaped_search = (
+                search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            )
+            where_clauses.append("filename LIKE ? ESCAPE '\\'")
+            params.append(f"%{escaped_search}%")
 
         where = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 

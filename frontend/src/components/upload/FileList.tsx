@@ -39,7 +39,10 @@ export function FileList({ items, onRetry }: FileListProps) {
               <span className="truncate text-sm">{item.file.name}</span>
               <span className="ml-auto text-xs text-[var(--color-error)]">{item.error}</span>
               <button
+                type="button"
                 onClick={() => onRetry(item.id)}
+                aria-label={`Retry classification for ${item.file.name}`}
+                title="Retry classification"
                 className="ml-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
               >
                 <RefreshCw className="h-3.5 w-3.5" />

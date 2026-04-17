@@ -1,4 +1,5 @@
 import json
+from json import JSONDecodeError
 
 from fastapi import APIRouter, HTTPException
 
@@ -15,12 +16,19 @@ async def list_history(
     label: str | None = None,
     search: str | None = None,
 ):
+    if page < 1:
+        raise HTTPException(status_code=422, detail="page must be >= 1")
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
     result = await get_history(page, limit, label, search)
     items = []
     for item in result["items"]:
         probs = item["probabilities"]
         if isinstance(probs, str):
-            probs = json.loads(probs)
+            try:
+                probs = json.loads(probs)
+            except JSONDecodeError:
+                probs = {}
         items.append(HistoryEntry(**{**item, "probabilities": probs}))
     return HistoryResponse(items=items, total=result["total"], page=result["page"])
 
@@ -32,7 +40,10 @@ async def get_history_entry(entry_id: int):
         raise HTTPException(status_code=404, detail="Classification not found")
     probs = result["probabilities"]
     if isinstance(probs, str):
-        probs = json.loads(probs)
+        try:
+            probs = json.loads(probs)
+        except JSONDecodeError:
+            probs = {}
     return HistoryEntry(**{**result, "probabilities": probs})
 
 

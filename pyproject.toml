@@ -14,7 +14,6 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "uvicorn>=0.42.0",
     "aiosqlite>=0.20.0",
-    "aiofiles>=24.1.0",
 ]
 
 [project.optional-dependencies]

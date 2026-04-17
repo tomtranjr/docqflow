@@ -55,6 +55,9 @@ export function DropZone({ onFiles, disabled }: DropZoneProps) {
   return (
     <div>
       <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
         onDragOver={(e) => {
           e.preventDefault()
           if (!disabled) setDragOver(true)
@@ -62,6 +65,13 @@ export function DropZone({ onFiles, disabled }: DropZoneProps) {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (disabled) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            inputRef.current?.click()
+          }
+        }}
         className={cn(
           'flex cursor-pointer flex-col items-center gap-3 rounded border-2 border-dashed px-8 py-12 transition-all duration-150',
           'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]',

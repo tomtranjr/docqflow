@@ -15,12 +15,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return (localStorage.getItem('docqflow-theme') as Theme) || 'system'
   })
 
-  const resolved =
-    theme === 'system'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      : theme
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+  )
+
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
+
+  const resolved: 'light' | 'dark' =
+    theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
 
   useEffect(() => {
     localStorage.setItem('docqflow-theme', theme)

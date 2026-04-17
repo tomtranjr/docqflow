@@ -7,7 +7,8 @@ interface PredictionCardProps {
 }
 
 export function PredictionCard({ filename, result }: PredictionCardProps) {
-  const confidence = Math.max(...Object.values(result.probabilities))
+  const values = Object.values(result.probabilities)
+  const confidence = values.length ? Math.max(...values) : 0
   const truncated = filename.length > 40 ? filename.slice(0, 40) + '...' : filename
 
   return (
