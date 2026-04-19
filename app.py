@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile
 from pydantic import BaseModel
+import fitz
 
 from classify import extract_text_from_bytes, predict_from_text
 from src.api.database import save_classification
@@ -31,7 +32,12 @@ async def predict_pdf(file: UploadFile):
         )
 
     pdf_bytes = await file.read()
-    text = extract_text_from_bytes(pdf_bytes)
+    try:
+        text = extract_text_from_bytes(pdf_bytes)
+    except fitz.FileDataError as exc:
+        raise HTTPException(
+            status_code=422, detail="File is not a readable PDF"
+        ) from exc
 
     if not text.strip():
         raise HTTPException(status_code=422, detail="PDF valid but not processable")
