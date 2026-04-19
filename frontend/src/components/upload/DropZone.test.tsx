@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { DropZone } from './DropZone'
 import { MAX_FILE_SIZE } from '@/lib/constants'
 
@@ -11,37 +12,37 @@ function makeFile(name: string, type: string, size: number): File {
 }
 
 describe('DropZone', () => {
-  it('accepts a valid PDF and calls onFiles', () => {
+  it('accepts a valid PDF and calls onFiles', async () => {
     const onFiles = vi.fn()
-    render(<DropZone onFiles={onFiles} />)
+    const { container } = render(<DropZone onFiles={onFiles} />)
 
-    const input = document.querySelector('input[type=file]') as HTMLInputElement
+    const input = container.querySelector('input[type=file]') as HTMLInputElement
     const pdf = makeFile('doc.pdf', 'application/pdf', 1024)
-    fireEvent.change(input, { target: { files: [pdf] } })
+    await userEvent.upload(input, pdf)
 
     expect(onFiles).toHaveBeenCalledTimes(1)
     expect(onFiles.mock.calls[0][0]).toEqual([pdf])
   })
 
-  it('rejects a non-PDF by extension and MIME type', () => {
+  it('rejects a non-PDF by extension and MIME type', async () => {
     const onFiles = vi.fn()
-    render(<DropZone onFiles={onFiles} />)
+    const { container } = render(<DropZone onFiles={onFiles} />)
 
-    const input = document.querySelector('input[type=file]') as HTMLInputElement
+    const input = container.querySelector('input[type=file]') as HTMLInputElement
     const txt = makeFile('notes.txt', 'text/plain', 1024)
-    fireEvent.change(input, { target: { files: [txt] } })
+    await userEvent.upload(input, txt)
 
     expect(onFiles).not.toHaveBeenCalled()
     expect(screen.getByText(/only pdf files accepted/i)).toBeInTheDocument()
   })
 
-  it('rejects a PDF that exceeds the 20MB size limit', () => {
+  it('rejects a PDF that exceeds the 20MB size limit', async () => {
     const onFiles = vi.fn()
-    render(<DropZone onFiles={onFiles} />)
+    const { container } = render(<DropZone onFiles={onFiles} />)
 
-    const input = document.querySelector('input[type=file]') as HTMLInputElement
+    const input = container.querySelector('input[type=file]') as HTMLInputElement
     const huge = makeFile('huge.pdf', 'application/pdf', MAX_FILE_SIZE + 1)
-    fireEvent.change(input, { target: { files: [huge] } })
+    await userEvent.upload(input, huge)
 
     expect(onFiles).not.toHaveBeenCalled()
     expect(screen.getByText(/exceeds 20mb/i)).toBeInTheDocument()

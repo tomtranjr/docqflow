@@ -56,7 +56,11 @@ def client(test_db_path, trained_pipeline, monkeypatch):
 
     asyncio.run(init_db())
     monkeypatch.setattr(server, "_pipeline", trained_pipeline)
-    return TestClient(server.app)
+    test_client = TestClient(server.app)
+    try:
+        yield test_client
+    finally:
+        test_client.close()
 
 
 def _make_pdf_bytes(text: str) -> bytes:
