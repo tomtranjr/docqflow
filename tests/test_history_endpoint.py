@@ -85,3 +85,126 @@ def test_history_pagination_and_filters(client):
     # invalid params rejected
     assert client.get("/api/history?page=0").status_code == 422
     assert client.get("/api/history?limit=101").status_code == 422
+
+
+def test_history_get_by_id_returns_entry(client):
+    """GET /api/history/{id} returns the seeded row with probabilities parsed to a dict."""
+    _seed(
+        [
+            {
+                "filename": "single.pdf",
+                "label": "permit-3-8",
+                "confidence": 0.88,
+                "probabilities": {"permit-3-8": 0.88, "not-permit-3-8": 0.12},
+                "text_preview": "some preview",
+                "file_size": 1234,
+            },
+        ]
+    )
+
+    entry_id = client.get("/api/history").json()["items"][0]["id"]
+    response = client.get(f"/api/history/{entry_id}")
+    assert response.status_code == 200, response.text
+
+    body = response.json()
+    assert body["id"] == entry_id
+    assert body["filename"] == "single.pdf"
+    assert body["label"] == "permit-3-8"
+    assert body["confidence"] == 0.88
+    assert body["text_preview"] == "some preview"
+    assert body["file_size"] == 1234
+    # probabilities must be a parsed dict, not the raw JSON string from the DB column.
+    assert body["probabilities"] == {"permit-3-8": 0.88, "not-permit-3-8": 0.12}
+
+
+def test_history_handles_malformed_probabilities_json(client):
+    """If the probabilities column contains invalid JSON, routes fall back to {} rather than 500.
+
+    Writes raw garbage directly via SQL to bypass save_classification's json.dumps,
+    then hits both /api/history and /api/history/{id} to cover both except branches.
+    """
+    import aiosqlite
+
+    from src.api.database import DB_PATH
+
+    async def _write_garbage():
+        db = await aiosqlite.connect(DB_PATH)
+        try:
+            await db.execute(
+                "INSERT INTO classifications "
+                "(filename, label, confidence, probabilities, text_preview, file_size) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("broken.pdf", "permit-3-8", 0.5, "{not valid json", "x", 100),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    asyncio.run(_write_garbage())
+
+    # List route: must not 500, must return probabilities={} for the bad row.
+    list_resp = client.get("/api/history")
+    assert list_resp.status_code == 200, list_resp.text
+    items = list_resp.json()["items"]
+    assert len(items) == 1
+    assert items[0]["probabilities"] == {}
+
+    # Detail route: same contract.
+    entry_id = items[0]["id"]
+    detail_resp = client.get(f"/api/history/{entry_id}")
+    assert detail_resp.status_code == 200, detail_resp.text
+    assert detail_resp.json()["probabilities"] == {}
+
+
+def test_history_search_escapes_sql_wildcards(client):
+    """LIKE wildcards in the search term must be treated as literals, not matchers.
+
+    The route escapes %, _, and \\ before passing to SQL LIKE ... ESCAPE '\\'.
+    Without that escaping, searching "%" would match every filename.
+    """
+    _seed(
+        [
+            {
+                "filename": "report.pdf",
+                "label": "permit-3-8",
+                "confidence": 0.9,
+                "probabilities": {"permit-3-8": 0.9, "not-permit-3-8": 0.1},
+                "text_preview": "x",
+                "file_size": 100,
+            },
+            {
+                "filename": "50%_done.pdf",
+                "label": "permit-3-8",
+                "confidence": 0.9,
+                "probabilities": {"permit-3-8": 0.9, "not-permit-3-8": 0.1},
+                "text_preview": "x",
+                "file_size": 100,
+            },
+            {
+                "filename": "snake_case.pdf",
+                "label": "not-permit-3-8",
+                "confidence": 0.7,
+                "probabilities": {"permit-3-8": 0.3, "not-permit-3-8": 0.7},
+                "text_preview": "x",
+                "file_size": 100,
+            },
+        ]
+    )
+
+    # "%" must only match filenames literally containing %.
+    pct = client.get("/api/history?search=%25").json()
+    assert pct["total"] == 1
+    assert pct["items"][0]["filename"] == "50%_done.pdf"
+
+    # "_" must only match filenames literally containing _, not any single char.
+    underscore = client.get("/api/history?search=_").json()
+    assert underscore["total"] == 2
+    assert {item["filename"] for item in underscore["items"]} == {
+        "50%_done.pdf",
+        "snake_case.pdf",
+    }
+
+    # Sanity: a normal substring still works.
+    report = client.get("/api/history?search=report").json()
+    assert report["total"] == 1
+    assert report["items"][0]["filename"] == "report.pdf"
