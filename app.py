@@ -1,6 +1,6 @@
+import fitz
 from fastapi import APIRouter, HTTPException, UploadFile
 from pydantic import BaseModel
-import fitz
 
 from classify import extract_text_from_bytes, predict_from_text
 from src.api.database import save_classification
