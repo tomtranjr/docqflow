@@ -24,10 +24,10 @@ This project uses [pre-commit](https://pre-commit.com/) to run code checks autom
 
 Two hooks run on every commit:
 
-- **ruff-check** — checks for common Python errors, unused imports, and import ordering
-- **ruff-format** — checks that code follows consistent formatting
+- **ruff-check** — checks for common Python errors, unused imports, and import ordering, and auto-fixes issues where possible (runs with `--fix`)
+- **ruff-format** — reformats code to follow consistent style
 
-If a hook fails, the commit is blocked. Review the error output, fix the issue, `git add` your changes, and commit again.
+Both hooks modify your files in place when they find something to fix. Pre-commit then fails the commit so you can review the changes. Review the diff, `git add` the updated files, and commit again.
 
 ### Running checks manually
 

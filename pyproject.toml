@@ -16,6 +16,7 @@ dependencies = [
     "requests>=2.33.0",
     "scikit-learn>=1.8.0",
     "uvicorn>=0.42.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,7 @@ notebook = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27.0",
     "pre-commit>=4.2.0",
     "pytest>=9.0.2",
     "ruff>=0.11.6",

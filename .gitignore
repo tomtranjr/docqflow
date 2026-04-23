@@ -209,3 +209,8 @@ __marimo__/
 data/
 models/
 mlruns/
+
+# Frontend
+node_modules/
+frontend/dist/
+.vite/
