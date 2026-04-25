@@ -29,14 +29,30 @@ DEFAULT_TEMPLATE = "data/permit-3-8/Form-3-8-Fillable-2020-04-07-FINAL_AxgX5Eg.p
 DEFAULT_OUTPUT_DIR = "data/permit-3-8"
 
 SODA_FIELDS = [
-    "permit_number", "permit_type", "filed_date", "issued_date",
-    "block", "lot", "street_number", "street_name", "street_suffix", "unit",
-    "description", "estimated_cost", "revised_cost",
-    "existing_use", "proposed_use",
-    "number_of_existing_stories", "number_of_proposed_stories",
-    "existing_construction_type", "proposed_construction_type",
-    "existing_occupancy", "proposed_occupancy",
-    "plansets", "existing_units", "proposed_units",
+    "permit_number",
+    "permit_type",
+    "filed_date",
+    "issued_date",
+    "block",
+    "lot",
+    "street_number",
+    "street_name",
+    "street_suffix",
+    "unit",
+    "description",
+    "estimated_cost",
+    "revised_cost",
+    "existing_use",
+    "proposed_use",
+    "number_of_existing_stories",
+    "number_of_proposed_stories",
+    "existing_construction_type",
+    "proposed_construction_type",
+    "existing_occupancy",
+    "proposed_occupancy",
+    "plansets",
+    "existing_units",
+    "proposed_units",
 ]
 
 
@@ -79,7 +95,7 @@ def fetch_permits(count: int, offset: int = 0) -> list[dict]:
         except requests.RequestException as e:
             logger.warning("SODA API attempt %d failed: %s", attempt + 1, e)
             if attempt < 2:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
     logger.error("SODA API failed after 3 attempts")
     return []
 
@@ -101,9 +117,7 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
     """
     try:
         # Step 1: GET search page, extract ViewState
-        r1 = session.get(
-            f"{DBI_BASE}/default.aspx?page=PermitType", timeout=15
-        )
+        r1 = session.get(f"{DBI_BASE}/default.aspx?page=PermitType", timeout=15)
         r1.raise_for_status()
 
         vs = re.search(r'__VIEWSTATE.*?value="(.*?)"', r1.text)
@@ -130,11 +144,11 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
         )
 
         # Step 3: GET permit details
-        r3 = session.get(
-            f"{DBI_BASE}/default.aspx?page=PermitDetails", timeout=15
-        )
+        r3 = session.get(f"{DBI_BASE}/default.aspx?page=PermitDetails", timeout=15)
         if r3.status_code != 200:
-            logger.warning("DBI details page returned %d for %s", r3.status_code, permit_number)
+            logger.warning(
+                "DBI details page returned %d for %s", r3.status_code, permit_number
+            )
             return None
 
         # Parse contractor spans
@@ -147,9 +161,7 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
             "InfoReq1_lblPhone": "contractor_phone",
         }
         for span_id, key in span_map.items():
-            match = re.search(
-                rf'id="{span_id}"[^>]*>(.*?)</span>', r3.text, re.DOTALL
-            )
+            match = re.search(rf'id="{span_id}"[^>]*>(.*?)</span>', r3.text, re.DOTALL)
             if match:
                 value = re.sub(r"<[^>]+>", "", match.group(1)).strip()
                 if value:
@@ -262,8 +274,12 @@ def map_to_fields(record: dict, contractor: dict | None) -> dict:
     # Existing vs proposed (paired fields)
     fields["4A TYPE OF CONSTR"] = record.get("existing_construction_type", "")
     fields["4 TYPE OF CONSTR"] = record.get("proposed_construction_type", "")
-    fields["5A NO OF STORIES OF OCCUPANCY"] = record.get("number_of_existing_stories", "")
-    fields["5 NO OF STORIES OF OCCUPANCY"] = record.get("number_of_proposed_stories", "")
+    fields["5A NO OF STORIES OF OCCUPANCY"] = record.get(
+        "number_of_existing_stories", ""
+    )
+    fields["5 NO OF STORIES OF OCCUPANCY"] = record.get(
+        "number_of_proposed_stories", ""
+    )
     fields["7A PRESENT USE"] = record.get("existing_use", "")
     fields["7 PROPOSED USE LEGAL USE"] = record.get("proposed_use", "")
     fields["8A 0CCUP CLASS"] = record.get("existing_occupancy", "")
@@ -274,8 +290,11 @@ def map_to_fields(record: dict, contractor: dict | None) -> dict:
     # Description (split across 5 lines)
     desc_lines = split_description(record.get("description", ""))
     desc_fields = [
-        "16 DESCRIPTION", "16A DESCRIPTION", "16B DESCRIPTION",
-        "16C DESCRIPTION", "16D DESCRIPTION",
+        "16 DESCRIPTION",
+        "16A DESCRIPTION",
+        "16B DESCRIPTION",
+        "16C DESCRIPTION",
+        "16D DESCRIPTION",
     ]
     for i, field_name in enumerate(desc_fields):
         fields[field_name] = desc_lines[i] if i < len(desc_lines) else ""
@@ -325,27 +344,36 @@ def main():
         description="Generate filled Form 3-8 PDFs from SF Data Portal permit data"
     )
     parser.add_argument(
-        "-n", "--count", type=int, default=10,
+        "-n",
+        "--count",
+        type=int,
+        default=10,
         help="Number of PDFs to generate (default: 10)",
     )
     parser.add_argument(
-        "--output-dir", default=DEFAULT_OUTPUT_DIR,
+        "--output-dir",
+        default=DEFAULT_OUTPUT_DIR,
         help=f"Output directory (default: {DEFAULT_OUTPUT_DIR})",
     )
     parser.add_argument(
-        "--template", default=DEFAULT_TEMPLATE,
+        "--template",
+        default=DEFAULT_TEMPLATE,
         help=f"Path to fillable PDF template (default: {DEFAULT_TEMPLATE})",
     )
     parser.add_argument(
-        "--skip-scrape", action="store_true",
+        "--skip-scrape",
+        action="store_true",
         help="Skip DBI scraping, use only SODA API data",
     )
     parser.add_argument(
-        "--delay", type=float, default=3.0,
+        "--delay",
+        type=float,
+        default=3.0,
         help="Delay in seconds between DBI requests (default: 3.0)",
     )
     parser.add_argument(
-        "--verbose", action="store_true",
+        "--verbose",
+        action="store_true",
         help="Enable debug logging",
     )
     args = parser.parse_args()
@@ -366,7 +394,9 @@ def main():
     # Use existing permit count as offset for pagination
     existing_count = count_existing_permits(args.output_dir)
     if existing_count:
-        logger.info("Found %d existing permits, offsetting to fetch next batch", existing_count)
+        logger.info(
+            "Found %d existing permits, offsetting to fetch next batch", existing_count
+        )
 
     # Fetch permits from SODA API
     records = fetch_permits(args.count, offset=existing_count)
@@ -375,10 +405,7 @@ def main():
         return
 
     # Filter records with missing critical fields
-    valid = [
-        r for r in records
-        if r.get("permit_number") and r.get("street_number")
-    ]
+    valid = [r for r in records if r.get("permit_number") and r.get("street_number")]
     logger.info("Got %d valid records (of %d fetched)", len(valid), len(records))
 
     # Set up DBI scraping session
@@ -400,7 +427,9 @@ def main():
             logger.debug("Scraping contractor for %s", permit_num)
             contractor = scrape_contractor(session, permit_num)
             if contractor:
-                logger.debug("Got contractor: %s", contractor.get("contractor_name", ""))
+                logger.debug(
+                    "Got contractor: %s", contractor.get("contractor_name", "")
+                )
             if i < len(valid) - 1:
                 time.sleep(args.delay)
 
