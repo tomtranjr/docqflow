@@ -14,6 +14,53 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require changelog for code changes
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" | sort -u)"
+          if [ -z "${changed}" ]; then
+            echo "No changed files detected; skipping changelog requirement."
+            exit 0
+          fi
+          needs_changelog=false
+          while IFS= read -r f; do
+            [ -z "${f}" ] && continue
+            if [ "${f}" = "CHANGELOG.md" ]; then
+              continue
+            fi
+            if [ "${f}" = "README.md" ]; then
+              continue
+            fi
+            case "${f}" in
+              docs/*) continue ;;
+            esac
+            if [[ "${f}" == *.md ]] && [ "${f}" != "CHANGELOG.md" ]; then
+              continue
+            fi
+            needs_changelog=true
+            break
+          done <<< "${changed}"
+
+          if [ "${needs_changelog}" = false ]; then
+            echo "Only documentation-style files changed; changelog not required."
+            exit 0
+          fi
+
+          if echo "${changed}" | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md updated alongside code/config changes. OK."
+            exit 0
+          fi
+
+          echo "::error::Code or config files changed but CHANGELOG.md was not updated. Add a brief entry under the appropriate date in CHANGELOG.md."
+          exit 1
 
       - uses: actions/setup-python@v5
         with:
