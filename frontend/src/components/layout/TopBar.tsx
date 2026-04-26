@@ -1,118 +1,335 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown } from 'lucide-react'
-import { useReviewerName, usePreferences } from '@/context/PreferencesContext'
+import { Wordmark } from '@/components/brand/Wordmark'
+import {
+  BellIcon,
+  ChartIcon,
+  DashboardIcon,
+  DocIcon,
+  Icons,
+  InboxIcon,
+  MoonIcon,
+  SearchIcon,
+  SettingsIcon,
+  SunIcon,
+} from '@/components/brand/icons'
+import { CommandPalette } from './CommandPalette'
+import { NotificationsPanel } from './NotificationsPanel'
+import { UploadButton } from './UploadButton'
+import { usePreferences, useReviewerName } from '@/context/PreferencesContext'
 import { useNotifications } from '@/context/NotificationsContext'
-import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
-import { Logo } from '@/components/common/Logo'
-import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
-  { to: '/app', label: 'Dashboard', end: true },
-  { to: '/app/submissions', label: 'Submissions', end: false },
-  { to: '/app/reports', label: 'Reports', end: false },
-  { to: '/app/settings', label: 'Settings', end: false },
-]
+const NAV = [
+  { to: '/app', end: true, label: 'Dashboard', icon: DashboardIcon },
+  { to: '/app/submissions', end: false, label: 'Submissions', icon: InboxIcon },
+  { to: '/app/queue', end: false, label: 'Review', icon: DocIcon },
+  { to: '/app/reports', end: false, label: 'Reports', icon: ChartIcon },
+  { to: '/app/settings', end: false, label: 'Settings', icon: SettingsIcon },
+] as const
 
-const SENTINEL_NAME = 'Reviewer'
+const SENTINEL = 'Reviewer'
+
+function resolvedTheme(theme: 'light' | 'dark' | 'system'): 'light' | 'dark' {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return theme
+}
 
 export function TopBar() {
   const reviewerName = useReviewerName()
-  const { setReviewerName } = usePreferences()
-  const initials = (reviewerName || SENTINEL_NAME).slice(0, 1).toUpperCase()
-  const [bellOpen, setBellOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const navigate = useNavigate()
+  const { theme, setTheme, setReviewerName } = usePreferences()
   const { unreadCount } = useNotifications()
+  const navigate = useNavigate()
+  const [openBell, setOpenBell] = useState(false)
+  const [openCmd, setOpenCmd] = useState(false)
+  const [openMenu, setOpenMenu] = useState(false)
+
+  const isDark = resolvedTheme(theme) === 'dark'
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setOpenCmd((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  function toggleTheme() {
+    setTheme(isDark ? 'light' : 'dark')
+  }
 
   function signOut() {
-    setMenuOpen(false)
-    setReviewerName(SENTINEL_NAME)
+    setOpenMenu(false)
+    setReviewerName(SENTINEL)
     navigate('/login')
   }
 
+  const initials = (reviewerName || SENTINEL).slice(0, 2).toUpperCase()
+  const display = reviewerName === SENTINEL || !reviewerName ? 'Reviewer' : reviewerName
+
   return (
     <header
-      role="banner"
-      className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-[var(--color-topbar-border)] bg-[var(--color-topbar-bg)] px-6 text-[var(--color-topbar-text)]"
+      style={{
+        height: 60,
+        background: 'var(--surface-card)',
+        borderBottom: '1px solid var(--line)',
+        boxShadow: isDark ? '0 1px 0 rgba(0,0,0,0.4)' : '0 1px 0 rgba(11,37,69,0.04)',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: 20,
+        paddingRight: 16,
+        gap: 14,
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+      }}
     >
-      <div className="flex items-center gap-3">
-        <Logo size="sm" />
-      </div>
+      <NavLink to="/app" style={{ display: 'inline-flex', alignItems: 'center' }} aria-label="DocQFlow home">
+        <Wordmark size={22} onDark={isDark} />
+      </NavLink>
 
-      <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ to, label, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              cn(
-                'rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-[var(--color-topbar-active-bg)] text-[var(--color-topbar-text)]'
-                  : 'text-[var(--color-topbar-text-muted)] hover:bg-[var(--color-topbar-hover-bg)] hover:text-[var(--color-topbar-text)]',
-              )
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
+      <nav style={{ display: 'flex', height: '100%', marginLeft: 16 }} aria-label="Primary">
+        {NAV.map((n) => {
+          const Icon = n.icon
+          return (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              end={n.end}
+              className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, lineHeight: 1 }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+                <Icon size={16} />
+              </span>
+              <span>{n.label}</span>
+            </NavLink>
+          )
+        })}
       </nav>
 
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <button
-            type="button"
-            aria-label="Notifications"
-            aria-expanded={bellOpen}
-            onClick={() => setBellOpen((v) => !v)}
-            className="relative rounded-full p-1.5 text-[var(--color-topbar-text)] hover:bg-[var(--color-topbar-hover-bg)]"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <span
-                aria-label={`${unreadCount} unread notifications`}
-                className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[var(--color-danger)] px-1 text-[10px] font-bold text-white"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-          {bellOpen && <NotificationDropdown onClose={() => setBellOpen(false)} />}
-        </div>
+      <div style={{ flex: 1 }} />
 
-        <div className="relative">
-          <button
-            type="button"
-            aria-label="Open user menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-full pr-1 pl-1 py-1 hover:bg-[var(--color-topbar-hover-bg)]"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-semibold text-[var(--color-brand-primary)]">
-              {initials}
+      <button
+        type="button"
+        onClick={() => setOpenCmd(true)}
+        style={{
+          height: 32,
+          padding: '0 8px 0 10px',
+          background: 'var(--surface-sunken)',
+          border: '1px solid var(--line)',
+          borderRadius: 8,
+          color: 'var(--ink-2)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 12,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          minWidth: 220,
+          flexShrink: 0,
+        }}
+      >
+        <SearchIcon size={14} />
+        <span style={{ flex: 1, textAlign: 'left' }}>Search permits…</span>
+        <kbd
+          style={{
+            fontSize: 10,
+            fontFamily: 'var(--font-mono)',
+            background: 'var(--surface-card)',
+            border: '1px solid var(--line)',
+            padding: '1px 5px',
+            borderRadius: 4,
+            color: 'var(--ink-3)',
+          }}
+        >
+          ⌘K
+        </kbd>
+      </button>
+
+      <UploadButton variant="ghost" label="Upload" />
+
+      <button
+        type="button"
+        onClick={toggleTheme}
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: 'transparent',
+          border: 'none',
+          color: 'var(--ink-2)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          padding: 0,
+          flexShrink: 0,
+        }}
+      >
+        {isDark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+      </button>
+
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => setOpenBell((v) => !v)}
+          aria-label="Notifications"
+          aria-expanded={openBell}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: openBell ? 'var(--surface-sunken)' : 'transparent',
+            border: 'none',
+            color: 'var(--ink-2)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <BellIcon size={16} />
+          {unreadCount > 0 && (
+            <span
+              aria-label={`${unreadCount} unread`}
+              style={{
+                position: 'absolute',
+                top: 4,
+                right: 5,
+                minWidth: 14,
+                height: 14,
+                borderRadius: 7,
+                background: '#E08400',
+                border: '1.5px solid var(--surface-card)',
+                color: '#fff',
+                fontSize: 9,
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+              }}
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
-            <span className="hidden text-sm font-medium md:inline">{reviewerName}</span>
-            <ChevronDown className="h-3 w-3 text-[var(--color-topbar-text-muted)]" />
-          </button>
-          {menuOpen && (
+          )}
+        </button>
+        {openBell && <NotificationsPanel onClose={() => setOpenBell(false)} />}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          paddingLeft: 12,
+          borderLeft: '1px solid var(--line)',
+          height: 36,
+          flexShrink: 0,
+          position: 'relative',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setOpenMenu((v) => !v)}
+          aria-label="Open user menu"
+          aria-expanded={openMenu}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #4D8AF7, #1A4FCC)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 12,
+            }}
+          >
+            {initials}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            <span style={{ color: 'var(--ink)', fontSize: 12, fontWeight: 600 }}>{display}</span>
+            <span style={{ color: 'var(--ink-3)', fontSize: 11 }}>Plan Reviewer · DBI</span>
+          </div>
+          <Icons.chevD size={12} />
+        </button>
+        {openMenu && (
+          <>
+            <div onClick={() => setOpenMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
             <div
               role="menu"
-              className="absolute right-0 mt-2 w-44 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-elev1)] text-[var(--color-text-primary)] shadow-[var(--shadow-elev)]"
+              className="card"
+              style={{
+                position: 'absolute',
+                top: 44,
+                right: 0,
+                width: 200,
+                zIndex: 61,
+                boxShadow: 'var(--shadow-pop)',
+                padding: 6,
+              }}
             >
+              <NavLink
+                to="/app/settings"
+                role="menuitem"
+                onClick={() => setOpenMenu(false)}
+                style={{
+                  display: 'block',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  borderRadius: 6,
+                  color: 'var(--ink-2)',
+                }}
+              >
+                Account settings
+              </NavLink>
               <button
                 type="button"
                 role="menuitem"
                 onClick={signOut}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-elev2)]"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  borderRadius: 6,
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--ink-2)',
+                  cursor: 'pointer',
+                }}
               >
                 Sign out
               </button>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
+
+      {openCmd && <CommandPalette onClose={() => setOpenCmd(false)} />}
     </header>
   )
 }

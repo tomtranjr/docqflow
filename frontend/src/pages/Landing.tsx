@@ -1,51 +1,182 @@
 import { Link } from 'react-router-dom'
-import { FileText, ShieldCheck, Split, MonitorCheck } from 'lucide-react'
-import { Logo } from '@/components/common/Logo'
-import { MarketingTile } from '@/components/dashboard/MarketingTile'
+import { Wordmark } from '@/components/brand/Wordmark'
+import { SFSeal } from '@/components/brand/SFSeal'
+import { BuildingIcon, BoltIcon, DropIcon, MapIcon, SparkleIcon, ShieldIcon } from '@/components/brand/icons'
 
-const TILES = [
+const FEATURES = [
   {
-    icon: FileText,
-    title: 'Document Field Extraction',
-    description: 'Pull permit fields out of every PDF automatically.',
+    Icon: SparkleIcon,
+    title: 'Auto extraction',
+    body: 'Vision OCR + LLM parser pull permit fields out of every PDF in under two seconds.',
   },
   {
-    icon: ShieldCheck,
-    title: 'Completeness Check',
-    description: 'Flag missing fields before they reach a reviewer.',
+    Icon: ShieldIcon,
+    title: 'Completeness check',
+    body: 'Missing fields flagged before a reviewer ever opens the file.',
   },
   {
-    icon: Split,
-    title: 'Auto-classification',
-    description: 'Route to Building, Electrical, Plumbing, or Zoning.',
+    Icon: MapIcon,
+    title: 'Smart routing',
+    body: 'Permits land on the right desk: Building, Electrical, Plumbing, Zoning.',
   },
   {
-    icon: MonitorCheck,
-    title: 'Review Dashboard',
-    description: 'One workspace for every pending submission.',
+    Icon: BuildingIcon,
+    title: 'Reviewer cockpit',
+    body: 'PDF and structured fields side-by-side with hover-to-highlight evidence.',
   },
-]
+] as const
+
+const DEPTS = [
+  { Icon: BuildingIcon, label: 'Building' },
+  { Icon: BoltIcon, label: 'Electrical' },
+  { Icon: DropIcon, label: 'Plumbing' },
+  { Icon: MapIcon, label: 'Zoning' },
+] as const
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-[var(--color-surface-base)] px-6 py-16">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-12">
-        <header className="flex flex-col items-center gap-6 text-center">
-          <Logo size="lg" withSlogan />
-          <Link
-            to="/login"
-            className="rounded-[var(--radius-sm)] bg-[var(--color-brand-primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-primary-hover,var(--color-brand-primary))]"
-          >
-            Sign in
-          </Link>
-        </header>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '18px 32px',
+          borderBottom: '1px solid var(--line)',
+          background: 'var(--surface-card)',
+        }}
+      >
+        <Wordmark size={20} />
+        <Link to="/login" className="btn btn-primary btn-sm">
+          Sign in
+        </Link>
+      </header>
 
-        <section className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TILES.map((tile) => (
-            <MarketingTile key={tile.title} {...tile} />
+      <main style={{ flex: 1, padding: '64px 32px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
+          <span className="label-eyebrow" style={{ color: 'var(--blue-500)' }}>
+            City &amp; County of San Francisco
+          </span>
+          <h1
+            style={{
+              fontSize: 44,
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              margin: 0,
+              maxWidth: 780,
+              lineHeight: 1.1,
+            }}
+          >
+            Intelligent document processing for smarter permitting.
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--ink-3)', maxWidth: 620, margin: '8px 0 0', lineHeight: 1.55 }}>
+            DocQFlow helps the Department of Building Inspection move every permit faster — extract, validate, route,
+            and review without losing the human in the loop.
+          </p>
+          <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <Link to="/login" className="btn btn-accent btn-lg">
+              Sign in to start
+            </Link>
+            <Link to="/login" className="btn btn-lg">
+              See how it works
+            </Link>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 56,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: 14,
+          }}
+        >
+          {FEATURES.map(({ Icon, title, body }) => (
+            <article key={title} className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: 'var(--blue-50)',
+                  color: 'var(--blue-500)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon size={18} />
+              </span>
+              <h2 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>{title}</h2>
+              <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: 0, lineHeight: 1.55 }}>{body}</p>
+            </article>
           ))}
         </section>
-      </div>
+
+        <section
+          style={{
+            marginTop: 56,
+            padding: '24px 28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 24,
+            borderRadius: 'var(--r-lg)',
+            background: 'linear-gradient(135deg, var(--ink-800), var(--ink-700))',
+            color: '#fff',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <div className="label-eyebrow" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              Trusted across DBI
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>
+              Routing 312 permits a week across 4 departments.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {DEPTS.map(({ Icon, label }) => (
+              <span
+                key={label}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <Icon size={14} />
+                {label}
+              </span>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer
+        style={{
+          padding: '16px 32px',
+          borderTop: '1px solid var(--line)',
+          background: 'var(--surface-card)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 12,
+          color: 'var(--ink-4)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <SFSeal size={20} />
+          <span>City &amp; County of San Francisco · Department of Building Inspection</span>
+        </div>
+        <div>v2.4.0</div>
+      </footer>
     </div>
   )
 }

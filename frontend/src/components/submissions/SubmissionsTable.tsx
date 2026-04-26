@@ -1,61 +1,66 @@
-import { ConfidenceBadge } from '@/components/results/ConfidenceBadge'
-import { ClassificationBadge } from '@/components/common/ClassificationBadge'
-import type { HistoryEntry } from '@/lib/types'
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString()
-}
+import { useNavigate } from 'react-router-dom'
+import { ChevronRightIcon } from '@/components/brand/icons'
+import { ConfMini } from '@/components/dashboard/ConfMini'
+import type { Permit } from '@/lib/permitData'
+import { StagePill } from './StagePill'
 
 interface SubmissionsTableProps {
-  entries: HistoryEntry[]
+  permits: Permit[]
 }
 
-export function SubmissionsTable({ entries }: SubmissionsTableProps) {
+export function SubmissionsTable({ permits }: SubmissionsTableProps) {
+  const navigate = useNavigate()
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
+    <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+      <table className="tbl">
         <thead>
-          <tr className="border-b border-[var(--color-border)]">
-            <th className="py-3 font-semibold text-[var(--color-text-secondary)]">Filename</th>
-            <th className="py-3 font-semibold text-[var(--color-text-secondary)]">Date</th>
-            <th className="py-3 font-semibold text-[var(--color-text-secondary)]">
-              Classification
+          <tr>
+            <th style={{ width: 40 }}>
+              <input type="checkbox" aria-label="Select all" />
             </th>
-            <th className="py-3 font-semibold text-[var(--color-text-secondary)]">Confidence</th>
+            <th>Permit ID</th>
+            <th>Applicant</th>
+            <th>Address</th>
+            <th>Dept.</th>
+            <th>Stage</th>
+            <th>Confidence</th>
+            <th>Received</th>
+            <th>Days</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, i) => (
-            <tr
-              key={entry.id}
-              className={`h-12 border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-elev2)] ${
-                i % 2 === 1 ? 'bg-[var(--color-surface-elev1)]/50' : ''
-              }`}
-            >
-              <td className="max-w-[300px] truncate py-3" title={entry.filename}>
-                {entry.filename}
+          {permits.map((p) => (
+            <tr key={p.id} onClick={() => navigate(`/app/review/${p.id}`)} style={{ cursor: 'pointer' }}>
+              <td onClick={(e) => e.stopPropagation()}>
+                <input type="checkbox" aria-label={`Select ${p.id}`} />
               </td>
-              <td
-                className="py-3 text-[var(--color-text-secondary)]"
-                title={new Date(entry.uploaded_at).toLocaleString()}
-              >
-                {formatDate(entry.uploaded_at)}
+              <td>
+                <span className="mono" style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                  {p.id}
+                </span>
               </td>
-              <td className="py-3">
-                <ClassificationBadge label={entry.label} />
+              <td>{p.applicant}</td>
+              <td style={{ color: 'var(--ink-3)' }}>{p.address}</td>
+              <td>
+                <span className="pill" style={{ height: 22 }}>
+                  {p.department}
+                </span>
               </td>
-              <td className="py-3">
-                <ConfidenceBadge confidence={entry.confidence} />
+              <td>
+                <StagePill stage={p.stage} />
+              </td>
+              <td>
+                <ConfMini value={p.confidence} />
+              </td>
+              <td className="tabular" style={{ color: 'var(--ink-3)' }}>
+                {p.received}
+              </td>
+              <td className="tabular mono" style={{ color: p.daysOpen >= 7 ? 'var(--warn)' : 'var(--ink-3)' }}>
+                {p.daysOpen}d
+              </td>
+              <td>
+                <ChevronRightIcon size={14} />
               </td>
             </tr>
           ))}

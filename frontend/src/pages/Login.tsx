@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AuthShell } from '@/components/layout/AuthShell'
-import { Logo } from '@/components/common/Logo'
+import { Wordmark } from '@/components/brand/Wordmark'
 import { usePreferences } from '@/context/PreferencesContext'
 
 export function Login() {
@@ -18,41 +17,73 @@ export function Login() {
   }
 
   return (
-    <AuthShell>
-      <div className="flex flex-col items-center gap-6 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-elev1)] p-8 shadow-[var(--shadow-card)]">
-        <Logo size="md" withSlogan />
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--surface-app)',
+        padding: '32px 16px',
+      }}
+    >
+      <div className="card" style={{ width: '100%', maxWidth: 380, padding: '32px 28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+          <Wordmark size={22} />
+        </div>
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px', textAlign: 'center' }}>
+          Sign in to DocQFlow
+        </h1>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'center', margin: '0 0 22px' }}>
+          City &amp; County of San Francisco · DBI
+        </p>
 
-        <form onSubmit={onSubmit} className="flex w-full flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-[var(--color-text-primary)]">Email</span>
+        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--ink-2)' }}>
+            <span style={{ fontWeight: 600 }}>Email</span>
             <input
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-base)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-accent)]"
+              style={{
+                height: 36,
+                padding: '0 12px',
+                border: '1px solid var(--line-2)',
+                borderRadius: 'var(--r)',
+                background: 'var(--surface-card)',
+                color: 'var(--ink)',
+                fontSize: 13,
+              }}
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-[var(--color-text-primary)]">Password</span>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--ink-2)' }}>
+            <span style={{ fontWeight: 600 }}>Password</span>
             <input
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-base)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-accent)]"
+              style={{
+                height: 36,
+                padding: '0 12px',
+                border: '1px solid var(--line-2)',
+                borderRadius: 'var(--r)',
+                background: 'var(--surface-card)',
+                color: 'var(--ink)',
+                fontSize: 13,
+              }}
             />
           </label>
 
-          <button
-            type="submit"
-            className="mt-2 rounded-[var(--radius-sm)] bg-[var(--color-brand-primary)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-primary-hover,var(--color-brand-primary))]"
-          >
+          <button type="submit" className="btn btn-primary btn-lg" style={{ marginTop: 4, justifyContent: 'center' }}>
             Sign in
           </button>
         </form>
       </div>
-    </AuthShell>
+    </div>
   )
 }
