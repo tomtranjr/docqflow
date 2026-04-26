@@ -3,7 +3,11 @@ import os
 
 import aiosqlite
 
-DB_PATH = os.getenv("DOCQFLOW_DB_PATH", "data/docqflow.db")
+from src.api.config import load_settings
+from src.api.migrations import apply_migrations
+
+_settings = load_settings()
+DB_PATH = _settings.db_path
 
 
 async def get_db() -> aiosqlite.Connection:
@@ -17,27 +21,7 @@ async def get_db() -> aiosqlite.Connection:
 async def init_db() -> None:
     db = await get_db()
     try:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS classifications (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename      TEXT NOT NULL,
-                uploaded_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                label         TEXT NOT NULL,
-                confidence    REAL NOT NULL,
-                probabilities TEXT NOT NULL,
-                text_preview  TEXT,
-                file_size     INTEGER
-            )
-        """)
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_classifications_uploaded_at "
-            "ON classifications(uploaded_at)"
-        )
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_classifications_label "
-            "ON classifications(label)"
-        )
-        await db.commit()
+        await apply_migrations(db)
     finally:
         await db.close()
 
@@ -49,13 +33,14 @@ async def save_classification(
     probabilities: dict,
     text_preview: str | None = None,
     file_size: int | None = None,
-) -> None:
+    pdf_sha256: str | None = None,
+) -> int:
     db = await get_db()
     try:
-        await db.execute(
+        cursor = await db.execute(
             "INSERT INTO classifications "
-            "(filename, label, confidence, probabilities, text_preview, file_size) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "(filename, label, confidence, probabilities, text_preview, file_size, pdf_sha256) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 filename,
                 label,
@@ -63,9 +48,11 @@ async def save_classification(
                 json.dumps(probabilities),
                 text_preview,
                 file_size,
+                pdf_sha256,
             ),
         )
         await db.commit()
+        return cursor.lastrowid
     finally:
         await db.close()
 
