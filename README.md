@@ -36,6 +36,8 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 
    For the full training guide (folder structure, CLI options, how the model works, and MLflow logging), see [docs/model-training.md](docs/model-training.md).
 
+   To generate training PDFs from SF Data Portal data (correct + minor-error + major-error variants for the validation pipeline), see [docs/permit-generation.md](docs/permit-generation.md).
+
 2. Start the API server:
 
    ```bash
