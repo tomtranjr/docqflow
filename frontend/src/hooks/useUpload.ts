@@ -63,7 +63,7 @@ export function useUpload() {
         const file = files[0]
         try {
           const result = await classifyPDF(file)
-          navigate(`/review/${result.id}`)
+          navigate(`/app/review/${result.id}`)
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Upload failed'
           toast.error(`Upload failed: ${message}`)
@@ -87,7 +87,7 @@ export function useUpload() {
         )
       }
       setQueueResults(queued)
-      navigate('/queue')
+      navigate('/app/queue')
     },
     [navigate, setQueueResults],
   )

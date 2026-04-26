@@ -39,7 +39,7 @@ describe('useUpload', () => {
     navigateMock.mockReset()
   })
 
-  it('1-file upload classifies and navigates to /review/:id', async () => {
+  it('1-file upload classifies and navigates to /app/review/:id', async () => {
     classifyMock.mockResolvedValueOnce({
       id: 7,
       label: 'permit-3-8',
@@ -54,10 +54,10 @@ describe('useUpload', () => {
     })
 
     expect(classifyMock).toHaveBeenCalledTimes(1)
-    expect(navigateMock).toHaveBeenCalledWith('/review/7')
+    expect(navigateMock).toHaveBeenCalledWith('/app/review/7')
   })
 
-  it('N-file upload populates queueResults and navigates to /queue', async () => {
+  it('N-file upload populates queueResults and navigates to /app/queue', async () => {
     classifyMock
       .mockResolvedValueOnce({
         id: 1,
@@ -85,7 +85,7 @@ describe('useUpload', () => {
       await result.current.upload.addAndProcess([makePdf('a.pdf'), makePdf('b.pdf')])
     })
 
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/queue'))
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/app/queue'))
     expect(classifyMock).toHaveBeenCalledTimes(2)
     expect(result.current.ctx.queueResults).toHaveLength(2)
     expect(result.current.ctx.queueResults[0].filename).toBe('a.pdf')
