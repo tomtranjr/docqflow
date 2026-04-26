@@ -40,10 +40,22 @@ def test_read_pdf_returns_bytes(tmp_path: Path):
 
 
 def test_read_pdf_raises_filenotfound(tmp_path: Path):
+    sha = "0" * 64
     with pytest.raises(FileNotFoundError):
-        read_pdf("missing", dir_path=str(tmp_path))
+        read_pdf(sha, dir_path=str(tmp_path))
 
 
 def test_pdf_path_returns_correct_path(tmp_path: Path):
-    p = pdf_path("abc", dir_path=str(tmp_path))
-    assert p == str(tmp_path / "abc.pdf")
+    sha = "a" * 64
+    p = pdf_path(sha, dir_path=str(tmp_path))
+    assert p == str(tmp_path / f"{sha}.pdf")
+
+
+def test_pdf_path_rejects_non_hex_sha(tmp_path: Path):
+    with pytest.raises(ValueError):
+        pdf_path("../../etc/passwd", dir_path=str(tmp_path))
+
+
+def test_pdf_path_rejects_short_sha(tmp_path: Path):
+    with pytest.raises(ValueError):
+        pdf_path("abc", dir_path=str(tmp_path))

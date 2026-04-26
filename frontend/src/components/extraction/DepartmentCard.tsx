@@ -14,9 +14,14 @@ const DEPT_ICON: Record<Department, LucideIcon> = {
 interface DepartmentCardProps {
   department: Department
   confidence: number
+  isPlaceholder?: boolean
 }
 
-export function DepartmentCard({ department, confidence }: DepartmentCardProps) {
+export function DepartmentCard({
+  department,
+  confidence,
+  isPlaceholder = false,
+}: DepartmentCardProps) {
   const showConfidence = useShowConfidence()
   const Icon = DEPT_ICON[department]
   const label = DEPARTMENT_LABELS[department]
@@ -34,12 +39,20 @@ export function DepartmentCard({ department, confidence }: DepartmentCardProps) 
         <span className="text-base font-semibold text-[var(--color-text-primary)]">
           {label}
         </span>
-        {showConfidence && (
+        {showConfidence && !isPlaceholder && (
           <span className="text-xs text-[var(--color-confidence-high)]">
             {pct}% confidence
           </span>
         )}
       </div>
+      {isPlaceholder && (
+        <span
+          className="rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] bg-[var(--color-surface-base)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+          title="Placeholder data - real LLM extraction lands in PR 3"
+        >
+          Placeholder
+        </span>
+      )}
     </section>
   )
 }

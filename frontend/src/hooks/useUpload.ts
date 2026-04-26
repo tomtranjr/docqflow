@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useUploadContext } from '@/context/UploadContext'
 import { classifyPDF } from '@/lib/api'
 import { MAX_CONCURRENT_UPLOADS } from '@/lib/constants'
@@ -63,19 +64,28 @@ export function useUpload() {
         try {
           const result = await classifyPDF(file)
           navigate(`/review/${result.id}`)
-        } catch {
-          // swallow; the page-level UI handles the error surface in PR 4
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Upload failed'
+          toast.error(`Upload failed: ${message}`)
         }
         return
       }
 
       const settled = await Promise.allSettled(files.map((file) => classifyPDF(file)))
       const queued: QueuedResult[] = []
+      const failures: string[] = []
       settled.forEach((outcome, idx) => {
         if (outcome.status === 'fulfilled') {
           queued.push({ filename: files[idx].name, result: outcome.value })
+        } else {
+          failures.push(files[idx].name)
         }
       })
+      if (failures.length > 0) {
+        toast.error(
+          `${failures.length} of ${files.length} uploads failed: ${failures.slice(0, 3).join(', ')}`,
+        )
+      }
       setQueueResults(queued)
       navigate('/queue')
     },

@@ -7,6 +7,8 @@ from src.api.database import save_classification
 from src.api.documents import upsert_document
 from src.api.pdf_storage import compute_sha256, save_pdf
 
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB; matches the frontend hint
+
 router = APIRouter()
 
 
@@ -35,7 +37,12 @@ async def predict_pdf(file: UploadFile):
             status_code=503, detail="Model not loaded. Train a model first."
         )
 
-    pdf_bytes = await file.read()
+    pdf_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(pdf_bytes) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit",
+        )
     try:
         text = extract_text_from_bytes(pdf_bytes)
     except fitz.FileDataError as exc:

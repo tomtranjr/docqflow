@@ -1,14 +1,23 @@
 import json
+import re
 from json import JSONDecodeError
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from .database import get_classification, get_history, get_stats
 from .models import HistoryEntry, HistoryResponse, StatsResponse
 from .pdf_storage import pdf_path
 
 router = APIRouter()
+
+_FILENAME_UNSAFE = re.compile(r'[\r\n"\\]')
+
+
+def _safe_disposition_filename(filename: str) -> str:
+    """Strip CRLF, quotes, and backslashes from filenames before reflecting them
+    into Content-Disposition. Prevents response header injection."""
+    return _FILENAME_UNSAFE.sub("_", filename)
 
 
 @router.get("/history", response_model=HistoryResponse)
@@ -75,25 +84,26 @@ async def get_classification_pdf(classification_id: int):
         raise HTTPException(status_code=404, detail="Classification not found")
     sha = row.get("pdf_sha256")
     if not sha:
-        raise HTTPException(
+        return JSONResponse(
             status_code=410,
-            detail={
+            content={
                 "error_code": "pdf_missing",
                 "message": "PDF unavailable for legacy submission",
             },
         )
     path = pdf_path(sha)
+    safe_name = _safe_disposition_filename(row["filename"])
     try:
         return FileResponse(
             path,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'inline; filename="{row["filename"]}"'},
+            headers={"Content-Disposition": f'inline; filename="{safe_name}"'},
         )
-    except FileNotFoundError as exc:
-        raise HTTPException(
+    except FileNotFoundError:
+        return JSONResponse(
             status_code=410,
-            detail={
+            content={
                 "error_code": "pdf_missing",
                 "message": "PDF file missing on disk",
             },
-        ) from exc
+        )

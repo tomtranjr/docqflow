@@ -57,8 +57,12 @@ async def apply_migrations(db: aiosqlite.Connection) -> None:
             try:
                 await db.execute(stmt)
             except aiosqlite.OperationalError as exc:
-                # idempotency for ALTER TABLE ADD COLUMN
-                if "duplicate column name" not in str(exc):
-                    raise
+                # ALTER TABLE ADD COLUMN is not idempotent on SQLite < 3.35;
+                # silently ignore the "duplicate column name" case but rethrow
+                # for any other ALTER failure or for non-ALTER statements.
+                is_alter = stmt.lstrip().upper().startswith("ALTER TABLE")
+                if is_alter and "duplicate column name" in str(exc):
+                    continue
+                raise
         await db.execute("INSERT INTO schema_version (v) VALUES (?)", (version,))
     await db.commit()

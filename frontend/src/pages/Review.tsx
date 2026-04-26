@@ -77,6 +77,7 @@ export function Review() {
             <DepartmentCard
               department={extraction.result.department}
               confidence={extraction.result.department_confidence}
+              isPlaceholder={extraction.result.model === 'placeholder'}
             />
           )}
           <ActionBar />

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 
 from src.api.config import load_settings
+
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def compute_sha256(data: bytes) -> str:
@@ -13,6 +16,8 @@ def compute_sha256(data: bytes) -> str:
 
 
 def pdf_path(sha256: str, dir_path: str | None = None) -> str:
+    if not _HEX64.fullmatch(sha256):
+        raise ValueError(f"invalid sha256: {sha256!r}")
     base = dir_path or load_settings().pdf_dir
     return os.path.join(base, f"{sha256}.pdf")
 
