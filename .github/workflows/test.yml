@@ -1,0 +1,116 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require changelog for code changes
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" | sort -u)"
+          if [ -z "${changed}" ]; then
+            echo "No changed files detected; skipping changelog requirement."
+            exit 0
+          fi
+          needs_changelog=false
+          while IFS= read -r f; do
+            [ -z "${f}" ] && continue
+            if [ "${f}" = "CHANGELOG.md" ]; then
+              continue
+            fi
+            if [ "${f}" = "README.md" ]; then
+              continue
+            fi
+            case "${f}" in
+              docs/*) continue ;;
+            esac
+            if [[ "${f}" == *.md ]] && [ "${f}" != "CHANGELOG.md" ]; then
+              continue
+            fi
+            needs_changelog=true
+            break
+          done <<< "${changed}"
+
+          if [ "${needs_changelog}" = false ]; then
+            echo "Only documentation-style files changed; changelog not required."
+            exit 0
+          fi
+
+          if echo "${changed}" | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md updated alongside code/config changes. OK."
+            exit 0
+          fi
+
+          echo "::error::Code or config files changed but CHANGELOG.md was not updated. Add a brief entry under the appropriate date in CHANGELOG.md."
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Test
+        run: uv run pytest -v
+
+
+  # infrastructure not set up yet, leave setup here for now
+  # docker-push:
+  #   needs: lint-and-test
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Authenticate to GCP
+  #       uses: google-github-actions/auth@v2
+  #       with:
+  #         workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+  #         service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+  #     - name: Set up Docker buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Configure Docker for Artifact Registry
+  #       run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         push: true
+  #         tags: |
+  #           us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
+  #           us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:${{ github.sha }}
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max

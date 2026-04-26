@@ -28,7 +28,7 @@ def test_db_path(tmp_path, monkeypatch):
 @pytest.fixture
 def trained_pipeline():
     """Load the real joblib model if present; otherwise skip tests that need it."""
-    from classify import load_model
+    from src.classifier import load_model
 
     model_path = ROOT / "models" / "model.joblib"
     if not model_path.exists():
@@ -40,22 +40,23 @@ def trained_pipeline():
 
 
 @pytest.fixture
-def client(test_db_path, trained_pipeline, monkeypatch):
+def client(test_db_path, trained_pipeline):
     """FastAPI TestClient with a temp DB and the real trained pipeline pre-loaded.
 
     We skip the lifespan (don't enter TestClient as a context manager) because it
-    re-loads the model from disk and would clobber our monkeypatched pipeline.
-    Instead we run init_db() manually against the monkeypatched DB_PATH.
+    re-loads the model from disk and would clobber our injected pipeline.
+    Instead we run init_db() manually against the monkeypatched DB_PATH and stash
+    the pipeline on app.state, mirroring what lifespan would have done.
     """
     import asyncio
 
     from fastapi.testclient import TestClient
 
-    import server
+    from src import server
     from src.api.database import init_db
 
     asyncio.run(init_db())
-    monkeypatch.setattr(server, "_pipeline", trained_pipeline)
+    server.app.state.pipeline = trained_pipeline
     test_client = TestClient(server.app)
     try:
         yield test_client

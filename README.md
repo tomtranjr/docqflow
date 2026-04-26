@@ -23,7 +23,7 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 4. Test the MLflow server connection:
 
    ```bash
-   uv run python main.py
+   uv run python scripts/check_mlflow.py
    ```
 
 ## Running Locally (without Docker)
@@ -31,7 +31,7 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 1. Train the model (you need PDF files in `data/` organized by class folder):
 
    ```bash
-   uv run python classify.py train --data-dir data
+   uv run python -m src.classifier train --data-dir data
    ```
 
    For the full training guide (folder structure, CLI options, how the model works, and MLflow logging), see [docs/model-training.md](docs/model-training.md).
@@ -41,7 +41,7 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 2. Start the API server:
 
    ```bash
-   uv run uvicorn app:app --reload
+   uv run uvicorn src.server:app --reload
    ```
 
 3. Open [http://localhost:8000/docs](http://localhost:8000/docs) to see the interactive API docs.
@@ -129,9 +129,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, pre-commit hooks, 
 
 ```text
 docqflow/
-├── app.py                    # FastAPI endpoints (/, /health, /predict)
-├── classify.py               # Model training, prediction, and text extraction
-├── main.py                   # MLflow connection test script
+├── src/
+│   ├── server.py             # FastAPI app + lifespan + static mount
+│   ├── classifier.py         # Model training, prediction, and text extraction
+│   └── api/
+│       ├── routes.py         # All HTTP endpoints (/predict, /health, /history, /stats)
+│       ├── models.py         # Pydantic response models
+│       └── database.py       # SQLite (aiosqlite) persistence layer
+├── scripts/
+│   └── check_mlflow.py       # MLflow connection smoke test
+├── tests/                    # pytest suite + conftest
+├── frontend/                 # React SPA (Vite + TypeScript)
 ├── Dockerfile                # Container setup for the classifier API
 ├── pyproject.toml            # Project metadata and dependencies
 ├── .pre-commit-config.yaml   # Pre-commit hook configuration

@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class PredictionResponse(BaseModel):
+    label: str
+    probabilities: dict[str, float]
+
+
 class HistoryEntry(BaseModel):
     id: int
     filename: str

@@ -124,7 +124,7 @@ def build_pipeline() -> Pipeline:
     )
 
 
-def train(data_dir: str, model_path: str) -> dict:
+def train(data_dir: str, model_path: str, skip_mlflow: bool = False) -> dict:
     """Train the classifier on labeled PDF data, log to MLflow, and save the model.
 
     Returns:
@@ -157,30 +157,33 @@ def train(data_dir: str, model_path: str) -> dict:
     print(classification_report(y_test, y_pred))
 
     # -- MLflow logging --
-    try:
-        tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
-        if tracking_uri:
-            mlflow.set_tracking_uri(tracking_uri)
+    if skip_mlflow:
+        print("Skipping MLflow logging (--skip-mlflow).")
+    else:
+        try:
+            tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+            if tracking_uri:
+                mlflow.set_tracking_uri(tracking_uri)
 
-        mlflow.set_experiment("doc-classifier")
+            mlflow.set_experiment("doc-classifier")
 
-        with mlflow.start_run():
-            mlflow.log_param("max_features", 5000)
-            mlflow.log_param("ngram_range", "1,2")
-            mlflow.log_param("max_iter", 1000)
-            mlflow.log_param("train_size", len(X_train))
-            mlflow.log_param("test_size", len(X_test))
+            with mlflow.start_run():
+                mlflow.log_param("max_features", 5000)
+                mlflow.log_param("ngram_range", "1,2")
+                mlflow.log_param("max_iter", 1000)
+                mlflow.log_param("train_size", len(X_train))
+                mlflow.log_param("test_size", len(X_test))
 
-            mlflow.log_metric("accuracy", report["accuracy"])
-            mlflow.log_metric("macro_precision", report["macro avg"]["precision"])
-            mlflow.log_metric("macro_recall", report["macro avg"]["recall"])
-            mlflow.log_metric("macro_f1", report["macro avg"]["f1-score"])
+                mlflow.log_metric("accuracy", report["accuracy"])
+                mlflow.log_metric("macro_precision", report["macro avg"]["precision"])
+                mlflow.log_metric("macro_recall", report["macro avg"]["recall"])
+                mlflow.log_metric("macro_f1", report["macro avg"]["f1-score"])
 
-            mlflow.sklearn.log_model(pipeline, "model")
-        print("MLflow logging complete.")
-    except Exception as e:
-        print(f"MLflow logging failed: {e}")
-        print("Training completed but metrics were not logged.")
+                mlflow.sklearn.log_model(pipeline, "model")
+            print("MLflow logging complete.")
+        except Exception as e:
+            print(f"MLflow logging failed: {e}")
+            print("Training completed but metrics were not logged.")
 
     joblib.dump(pipeline, model_path)
     print(f"Model saved to: {model_path}")
@@ -220,6 +223,11 @@ def main():
         default="models/model.joblib",
         help="Where to save the trained model",
     )
+    train_parser.add_argument(
+        "--skip-mlflow",
+        action="store_true",
+        help="Skip MLflow logging (use when the tracking server is unreachable)",
+    )
 
     predict_parser = subparsers.add_parser("predict", help="Classify a PDF")
     predict_parser.add_argument(
@@ -232,7 +240,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "train":
-        train(args.data_dir, args.model_path)
+        train(args.data_dir, args.model_path, skip_mlflow=args.skip_mlflow)
     elif args.command == "predict":
         result = predict(args.model_path, args.pdf_path)
         if result:

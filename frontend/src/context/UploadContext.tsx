@@ -41,6 +41,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   return <UploadContext.Provider value={{ items, dispatch }}>{children}</UploadContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUploadContext() {
   const ctx = useContext(UploadContext)
   if (!ctx) throw new Error('useUploadContext must be inside UploadProvider')
