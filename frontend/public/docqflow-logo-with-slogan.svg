@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 140" role="img" aria-label="DocQFlow — Intelligent Document Processing for Smarter Permitting">
+  <defs>
+    <linearGradient id="wave-grad-slogan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0F2C5C" />
+      <stop offset="60%" stop-color="#1F7AE0" />
+      <stop offset="100%" stop-color="#7FB3F0" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(82 6)">
+    <path d="M8 0 H32 L42 10 V36 H8 Z" fill="none" stroke="#0F2C5C" stroke-width="3" stroke-linejoin="round" />
+    <path d="M32 0 V10 H42" fill="none" stroke="#0F2C5C" stroke-width="3" stroke-linejoin="round" />
+    <line x1="14" y1="18" x2="36" y2="18" stroke="#1F7AE0" stroke-width="2.5" stroke-linecap="round" />
+    <line x1="14" y1="24" x2="36" y2="24" stroke="#1F7AE0" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M0 46 C 10 38, 18 54, 28 46 S 44 38, 52 46" fill="none" stroke="url(#wave-grad-slogan)" stroke-width="3.5" stroke-linecap="round" />
+    <path d="M0 54 C 12 47, 20 60, 32 54 S 48 47, 54 54" fill="none" stroke="#7FB3F0" stroke-width="2.5" stroke-linecap="round" opacity="0.7" />
+  </g>
+  <g font-family="'Public Sans', system-ui, sans-serif" font-weight="800" font-size="36">
+    <text x="146" y="48" fill="#0F2C5C" letter-spacing="-1">DOCQ</text>
+    <text x="252" y="48" fill="#1F7AE0" letter-spacing="-1">FLOW</text>
+  </g>
+  <g font-family="'Public Sans', system-ui, sans-serif" font-weight="600" font-size="18" fill="#0F2C5C" text-anchor="middle">
+    <text x="240" y="98">Intelligent Document Processing</text>
+    <text x="240" y="122">for Smarter Permitting</text>
+  </g>
+</svg>
