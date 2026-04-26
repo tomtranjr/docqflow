@@ -5,6 +5,11 @@ export type PredictionResponse = {
   pdf_sha256: string
 }
 
+export type QueuedResult = {
+  filename: string
+  result: PredictionResponse
+}
+
 export type UploadItem = {
   id: string
   file: File
