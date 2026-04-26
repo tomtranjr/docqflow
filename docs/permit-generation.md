@@ -57,17 +57,21 @@ You can tell at a glance from `ls` which file is supposed to test what.
 | `--minor N` | 30 | Number of minor-error PDFs |
 | `--major N` | 20 | Number of major-error PDFs |
 | `--max-minor-mutations N` | 3 | Upper bound on mutations per minor PDF (1..N drawn deterministically) |
-| `--major-source {bank,api-swap}` | `bank` | Where the mismatched description comes from |
 | `--reset` | off | Wipe `data/permit-3-8/*.pdf` (preserves template) and delete the manifest before generating |
 | `--skip-scrape` | off | Skip DBI contractor lookups (faster, less data) |
 | `--delay SECONDS` | 3.0 | Delay between DBI requests |
 | `--output-dir`, `--template`, `--verbose` | — | As named |
 
+## Minor vs major: the dividing line
+
+**Minor** errors are single-field surface damage (a typo, a blank field, a malformed format). A reviewer would say "this field is messed up." Each minor PDF has 1 to `--max-minor-mutations` independent field mutations.
+
+**Major** errors are cross-field contradictions where two or more fields tell a story that doesn't add up. A reviewer would say "something is fundamentally wrong with this permit." Each major PDF has exactly one major mutation, sampled uniformly from four types (semantic, numerical, temporal, spatial).
+
 ## Minor-error mutations
 
-The script picks 1 to `--max-minor-mutations` mutations per PDF, deterministically seeded by the permit number. Available mutations:
+Deterministically seeded by the permit number. Available mutations:
 
-- Cost format: `$45,000` becomes `45000` or `$45.000`
 - Address typo: swap two adjacent letters in the street name
 - License: drop a digit from CSLB number
 - Street suffix: `St` becomes `Ave` (or vice versa)
@@ -75,26 +79,32 @@ The script picks 1 to `--max-minor-mutations` mutations per PDF, deterministical
 - Missing block & lot: clear the `1 BLOCK & LOT` field (DBI Section 2 requires it)
 - Block & lot format: replace the `/` separator with `-`, `.`, space, or no separator (DBI specifies `0000/111`)
 - Missing form checkbox: clear the Form 3 or Form 8 checkbox at the top — applicant forgets to mark which form they're filing
-- Truncate description: cut the last description line at ~half length, drop trailing partial word
+- Missing description: clear all five description fields (16, 16A-D)
 
 Mutations whose target field is missing in a given record are skipped. The filename's mutation count reflects mutations actually applied.
 
-## Major-error sources
+## Major-error mutations
 
-Two phases for the `--major-source` flag:
+Each major PDF gets exactly one of these four cross-field contradictions, sampled uniformly per permit number. The four cover different "shapes" of error:
 
-### Phase 1: `bank` (default)
+### 1. Description vs. permit type (semantic)
 
-Description is replaced with a hardcoded mismatched phrase:
+Description is replaced with a hardcoded mismatched phrase from `MAJOR_DESCRIPTION_BANK`.
 
-- Form 3 records get Form 8 phrasing ("Replace existing water heater in kitchen, like for like.")
-- Form 8 records get Form 3 phrasing ("New construction of 4-story mixed-use building...")
+- Form 3 (new construction) records get Form 8 phrasing ("Replace existing water heater in kitchen, like for like.")
+- Form 8 (OTC alterations) records get Form 3 phrasing ("New construction of 4-story mixed-use building...")
 
-This is the easy mode for verifying the validator catches obvious mismatches. Start here.
+### 2. Cost vs. scope (numerical)
 
-### Phase 2: `api-swap`
+The estimated cost is swapped with one from a record on the opposite side of the pool's cost median. A small-scope job ("replace bathroom faucet") gets a multi-million-dollar valuation, or a new-construction record gets a $500 cost. The description still describes the original scope, so the cost no longer fits the work.
 
-Once the validator handles bank-source majors, switch to `api-swap`. The description is taken from a real record of the opposite permit type. Phrasing is more nuanced and realistic — closer to the kind of mismatch a human reviewer would actually see.
+### 3. Date impossibility (temporal)
+
+`DATE FILED` and `ISSUED` values are swapped, so issued date precedes filed date — logically impossible. Pure rule-checkable.
+
+### 4. Address vs. block/lot (spatial)
+
+The street address stays, but the block/lot is overwritten with values from a different real record. Simulates a data-entry copy-paste error where two fields that should reference the same parcel point to different locations.
 
 ## Ground-truth labels
 
@@ -109,16 +119,16 @@ Every run writes `data/permit-3-8/labels.json` — the supervised-learning answe
     "mutation_count": 2,
     "mutations": [
       {
-        "field": "2A ESTIMATED COST OF JOB",
-        "before": "$45,000",
-        "after": "45000",
-        "kind": "cost_format"
-      },
-      {
         "field": "1 STREET ADDRESS OF JOB BLOCK  LOT",
         "before": "773 Gates St",
         "after": "773 Gate sSt",
         "kind": "address_typo"
+      },
+      {
+        "field": "1 BLOCK & LOT",
+        "before": "5642/021",
+        "after": "5642-021",
+        "kind": "block_lot_format"
       }
     ]
   },
@@ -127,7 +137,6 @@ Every run writes `data/permit-3-8/labels.json` — the supervised-learning answe
     "permit_number": "202604230014",
     "permit_type": "8",
     "mutation_count": 1,
-    "source": "bank",
     "mutations": [
       {
         "field": "description",

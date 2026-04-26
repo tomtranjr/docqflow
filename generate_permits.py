@@ -5,8 +5,9 @@ One-shot training-data generator for the validation/reasoning pipeline.
 Produces three flavors of PDFs in a single batch:
 
     correct   — ground-truth, properly filled
-    minor     — N field-level mutations (1..MAX_MINOR_MUTATIONS), e.g. wrong date format
-    major     — semantic mismatch (description does not match permit type)
+    minor     — N single-field mutations (1..MAX_MINOR_MUTATIONS), e.g. address typo
+    major     — one cross-field contradiction sampled from 4 types: description
+                vs. permit type, cost vs. scope, date impossibility, address vs. block/lot
 
 Filenames encode the flavor and mutation count:
 
@@ -345,18 +346,6 @@ def _record_change(field: str, before: str, after: str, kind: str) -> dict:
     return {"field": field, "before": before, "after": after, "kind": kind}
 
 
-def _mutate_cost_format(fields: dict, rng: random.Random) -> dict | None:
-    """Strip the $/comma formatting or use Euro decimals."""
-    key = "2A ESTIMATED COST OF JOB"
-    val = fields.get(key, "")
-    if not val.startswith("$"):
-        return None
-    raw = val.replace("$", "").replace(",", "")
-    new_val = rng.choice([raw, f"${raw[:-3]}.{raw[-3:]}" if len(raw) > 3 else raw])
-    fields[key] = new_val
-    return _record_change(key, val, new_val, "cost_format")
-
-
 def _mutate_address_typo(fields: dict, rng: random.Random) -> dict | None:
     """Swap two adjacent letters somewhere in the street address."""
     key = "1 STREET ADDRESS OF JOB BLOCK  LOT"
@@ -444,29 +433,17 @@ def _mutate_missing_form_checkbox(fields: dict, rng: random.Random) -> dict | No
     return None
 
 
-def _mutate_truncate_description(fields: dict, rng: random.Random) -> dict | None:
-    """Truncate the last non-empty description line at ~half length, mid-sentence."""
-    for key in reversed(DESCRIPTION_FIELDS):
-        val = fields.get(key, "")
-        if val:
-            break
-    else:
+def _mutate_missing_description(fields: dict, rng: random.Random) -> dict | None:
+    """Clear all description fields (16, 16A-D)."""
+    original = " ".join(fields.get(k, "") for k in DESCRIPTION_FIELDS).strip()
+    if not original:
         return None
-    if len(val) < 8:
-        return None
-    cut = len(val) // 2
-    truncated = val[:cut]
-    if " " in truncated and not val[cut : cut + 1].isspace():
-        truncated = truncated.rsplit(" ", 1)[0]
-    truncated = truncated.rstrip()
-    if not truncated or truncated == val:
-        return None
-    fields[key] = truncated
-    return _record_change(key, val, truncated, "truncate_description")
+    for key in DESCRIPTION_FIELDS:
+        fields[key] = ""
+    return _record_change("16 DESCRIPTION", original, "", "missing_description")
 
 
 MINOR_MUTATIONS = [
-    _mutate_cost_format,
     _mutate_address_typo,
     _mutate_license_digit,
     _mutate_street_suffix,
@@ -474,7 +451,7 @@ MINOR_MUTATIONS = [
     _mutate_missing_block_lot,
     _mutate_block_lot_format,
     _mutate_missing_form_checkbox,
-    _mutate_truncate_description,
+    _mutate_missing_description,
 ]
 
 
@@ -502,47 +479,132 @@ def corrupt_minor(
     return fields, applied
 
 
-def corrupt_major(
-    record: dict,
-    fields: dict,
-    source: str,
-    alt_pool: list[dict] | None,
-) -> tuple[dict, list[dict]]:
-    """Replace description with one that mismatches the permit type."""
-    permit_number = record.get("permit_number", "")
-    rng = random.Random(_seed_for(permit_number))
+def _parse_cost(record: dict) -> float | None:
+    """Return numeric cost from a SODA record, or None if unparseable."""
+    raw = record.get("revised_cost") or record.get("estimated_cost") or ""
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _major_description_mismatch(
+    record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
+) -> dict | None:
+    """Replace description with a hardcoded mismatched phrase from MAJOR_DESCRIPTION_BANK."""
     permit_type = record.get("permit_type", "")
     original_desc = record.get("description", "") or ""
-
-    if source == "bank":
-        bank_key = "form_8_phrasing" if permit_type == "3" else "form_3_phrasing"
-        new_desc = rng.choice(MAJOR_DESCRIPTION_BANK[bank_key])
-        kind = f"description_mismatch_bank_{bank_key}"
-    elif source == "api-swap":
-        if not alt_pool:
-            logger.warning(
-                "api-swap requested but alt_pool empty; falling back to bank"
-            )
-            return corrupt_major(record, fields, "bank", None)
-        new_desc = rng.choice(alt_pool).get("description", "") or rng.choice(
-            MAJOR_DESCRIPTION_BANK["form_8_phrasing"]
-        )
-        kind = "description_mismatch_api_swap"
-    else:
-        raise ValueError(f"Unknown major source: {source}")
+    bank_key = "form_8_phrasing" if permit_type == "3" else "form_3_phrasing"
+    new_desc = rng.choice(MAJOR_DESCRIPTION_BANK[bank_key])
 
     desc_lines = split_description(new_desc)
     for i, field_name in enumerate(DESCRIPTION_FIELDS):
         fields[field_name] = desc_lines[i] if i < len(desc_lines) else ""
 
-    return fields, [
-        {
-            "field": "description",
-            "before": original_desc,
-            "after": new_desc,
-            "kind": kind,
-        }
+    return _record_change(
+        "description", original_desc, new_desc, f"description_mismatch_bank_{bank_key}"
+    )
+
+
+def _major_cost_scope_mismatch(
+    record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
+) -> dict | None:
+    """Swap cost with one from a record on the opposite side of the cost median."""
+    own_cost = _parse_cost(record)
+    if own_cost is None:
+        return None
+    own_pn = record.get("permit_number")
+    others = sorted(
+        (
+            (c, r)
+            for r in full_pool
+            if r.get("permit_number") != own_pn and (c := _parse_cost(r)) is not None
+        ),
+        key=lambda pair: pair[0],
+    )
+    if len(others) < 2:
+        return None
+
+    median = others[len(others) // 2][0]
+    candidates = [r for c, r in others if (c >= median) != (own_cost >= median)]
+    if not candidates:
+        return None
+
+    new_cost = _parse_cost(rng.choice(candidates))
+    if new_cost is None:
+        return None
+
+    key = "2A ESTIMATED COST OF JOB"
+    before = fields.get(key, "")
+    after = format_cost(str(new_cost))
+    fields[key] = after
+    return _record_change(key, before, after, "cost_scope_mismatch")
+
+
+def _major_date_impossibility(
+    record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
+) -> dict | None:
+    """Swap DATE FILED and ISSUED so issued precedes filed (logically impossible)."""
+    filed_key, issued_key = "DATE FILED", "ISSUED"
+    filed_val = fields.get(filed_key, "")
+    issued_val = fields.get(issued_key, "")
+    if not filed_val or not issued_val or filed_val == issued_val:
+        return None
+    fields[filed_key] = issued_val
+    fields[issued_key] = filed_val
+    return _record_change(
+        f"{filed_key} <-> {issued_key}",
+        f"filed={filed_val}, issued={issued_val}",
+        f"filed={issued_val}, issued={filed_val}",
+        "date_impossibility_swap",
+    )
+
+
+def _major_address_block_lot_mismatch(
+    record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
+) -> dict | None:
+    """Replace block/lot with values from another record (data-entry copy-paste error)."""
+    own_pn = record.get("permit_number")
+    candidates = [
+        r
+        for r in full_pool
+        if r.get("permit_number") != own_pn
+        and (r.get("block") or r.get("lot"))
+        and (r.get("block"), r.get("lot")) != (record.get("block"), record.get("lot"))
     ]
+    if not candidates:
+        return None
+    swap = rng.choice(candidates)
+    new_val = f"{swap.get('block', '')}/{swap.get('lot', '')}".strip("/")
+
+    key = "1 BLOCK & LOT"
+    before = fields.get(key, "")
+    if not new_val or new_val == before:
+        return None
+    fields[key] = new_val
+    return _record_change(key, before, new_val, "address_block_lot_mismatch")
+
+
+MAJOR_MUTATIONS = [
+    _major_description_mismatch,
+    _major_cost_scope_mismatch,
+    _major_date_impossibility,
+    _major_address_block_lot_mismatch,
+]
+
+
+def corrupt_major(
+    record: dict, fields: dict, full_pool: list[dict]
+) -> tuple[dict, list[dict]]:
+    """Apply one major mutation, sampled uniformly across the four types via deterministic shuffle."""
+    rng = random.Random(_seed_for(record.get("permit_number", "")))
+    candidates = MAJOR_MUTATIONS.copy()
+    rng.shuffle(candidates)
+    for mutation in candidates:
+        result = mutation(record, fields, rng, full_pool)
+        if result is not None:
+            return fields, [result]
+    return fields, []
 
 
 # ---------------------------------------------------------------------------
@@ -658,12 +720,6 @@ def main():
         help=f"Max field mutations per minor PDF (default: {MAX_MINOR_MUTATIONS})",
     )
     parser.add_argument(
-        "--major-source",
-        choices=["bank", "api-swap"],
-        default="bank",
-        help="Where mismatched descriptions come from (default: bank)",
-    )
-    parser.add_argument(
         "--reset",
         action="store_true",
         help="Wipe existing generated PDFs and manifest before generating",
@@ -726,9 +782,6 @@ def main():
             len(plan),
         )
 
-    pool_3 = [r for r in valid if r.get("permit_type") == "3"]
-    pool_8 = [r for r in valid if r.get("permit_type") == "8"]
-
     session = requests.Session() if not args.skip_scrape else None
 
     counts = {"correct": 0, "minor": 0, "major": 0}
@@ -761,12 +814,7 @@ def main():
             n = len(mutation_records)
             minor_histogram[n] = minor_histogram.get(n, 0) + 1
         elif flavor == "major":
-            alt = None
-            if args.major_source == "api-swap":
-                alt = pool_8 if record.get("permit_type") == "3" else pool_3
-            fields, mutation_records = corrupt_major(
-                record, fields, args.major_source, alt
-            )
+            fields, mutation_records = corrupt_major(record, fields, valid)
 
         mutation_count = len(mutation_records)
 
@@ -777,16 +825,13 @@ def main():
             counts[flavor] += 1
             used.add(permit_num)
             write_manifest(output_dir, used)
-            label_entry = {
+            labels[filename] = {
                 "flavor": flavor,
                 "permit_number": permit_num,
                 "permit_type": record.get("permit_type", ""),
                 "mutation_count": mutation_count,
                 "mutations": mutation_records,
             }
-            if flavor == "major":
-                label_entry["source"] = args.major_source
-            labels[filename] = label_entry
             write_labels(output_dir, labels)
             print(f"[{i + 1}/{len(plan)}] {filename}")
         else:
@@ -799,7 +844,7 @@ def main():
         print(f"  Minor:    {counts['minor']}  (mutations: {hist})")
     else:
         print(f"  Minor:    {counts['minor']}")
-    print(f"  Major:    {counts['major']}  (source: {args.major_source})")
+    print(f"  Major:    {counts['major']}")
     print(f"  Output:   {output_dir}/")
     print(f"  Labels:   {output_dir}/{LABELS_FILE}")
 
