@@ -131,7 +131,7 @@ def fetch_permits(
         "$select": select,
         "$where": where,
         "$order": "issued_date DESC",
-        "$limit": count * 2,
+        "$limit": count,
         "$offset": offset,
     }
 
@@ -459,16 +459,14 @@ MINOR_MUTATIONS = [
 ]
 
 
-def corrupt_minor(
-    fields: dict, permit_number: str, max_n: int
-) -> tuple[dict, list[dict]]:
-    """Apply 1..max_n field-level mutations deterministically.
+def corrupt_minor(fields: dict, permit_number: str) -> tuple[dict, list[dict]]:
+    """Apply 1..MAX_MINOR_MUTATIONS field-level mutations deterministically.
 
     Returns (mutated_fields, mutation_records). Mutations whose target field
     is missing are skipped; the returned list reflects only what actually fired.
     """
     rng = random.Random(_seed_for(permit_number))
-    n = rng.randint(1, max_n)
+    n = rng.randint(1, MAX_MINOR_MUTATIONS)
     candidates = MINOR_MUTATIONS.copy()
     rng.shuffle(candidates)
 
@@ -726,12 +724,6 @@ def parse_args() -> argparse.Namespace:
         "--major", type=int, default=20, help="Major-error PDFs (default: 20)"
     )
     parser.add_argument(
-        "--max-minor-mutations",
-        type=int,
-        default=MAX_MINOR_MUTATIONS,
-        help=f"Max field mutations per minor PDF (default: {MAX_MINOR_MUTATIONS})",
-    )
-    parser.add_argument(
         "--reset",
         action="store_true",
         help="Wipe existing generated PDFs and manifest before generating",
@@ -808,9 +800,7 @@ def run_generation_loop(
 
         mutation_records: list[dict] = []
         if flavor == "minor":
-            fields, mutation_records = corrupt_minor(
-                fields, permit_num, args.max_minor_mutations
-            )
+            fields, mutation_records = corrupt_minor(fields, permit_num)
             n = len(mutation_records)
             minor_histogram[n] = minor_histogram.get(n, 0) + 1
         elif flavor == "major":

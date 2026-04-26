@@ -56,7 +56,6 @@ You can tell at a glance from `ls` which file is supposed to test what.
 | `--correct N` | 50 | Number of correct PDFs |
 | `--minor N` | 30 | Number of minor-error PDFs |
 | `--major N` | 20 | Number of major-error PDFs |
-| `--max-minor-mutations N` | 3 | Upper bound on mutations per minor PDF (1..N drawn deterministically) |
 | `--reset` | off | Wipe `data/permit-3-8/*.pdf` (preserves template) and delete the manifest before generating |
 | `--skip-scrape` | off | Skip DBI contractor lookups (faster, less data) |
 | `--delay SECONDS` | 3.0 | Delay between DBI requests |
@@ -64,7 +63,7 @@ You can tell at a glance from `ls` which file is supposed to test what.
 
 ## Minor vs major: the dividing line
 
-**Minor** errors are single-field surface damage (a typo, a blank field, a malformed format). A reviewer would say "this field is messed up." Each minor PDF has 1 to `--max-minor-mutations` independent field mutations.
+**Minor** errors are single-field surface damage (a typo, a blank field, a malformed format). A reviewer would say "this field is messed up." Each minor PDF has 1 to 3 independent field mutations (set by `MAX_MINOR_MUTATIONS` in the script).
 
 **Major** errors are cross-field contradictions where two or more fields tell a story that doesn't add up. A reviewer would say "something is fundamentally wrong with this permit." Each major PDF has exactly one major mutation, sampled uniformly from four types (semantic, numerical, temporal, spatial).
 
