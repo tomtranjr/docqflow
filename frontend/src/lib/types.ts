@@ -81,3 +81,31 @@ export type ExtractionState =
   | { kind: 'unavailable'; retryAfterS?: number }
   | { kind: 'not_found' }
   | { kind: 'error'; message: string }
+
+export interface ExtractedFields {
+  application_number: string | null
+  date_filed: string | null
+  project_address: string | null
+  parcel_number: string | null
+  estimated_cost: string | null
+  stories: string | null
+  dwelling_units: string | null
+  proposed_use: string | null
+  occupancy_class: string | null
+  construction_type: string | null
+  contractor_name: string | null
+  contractor_address: string | null
+  license_number: string | null
+  owner_name: string | null
+  description: string | null
+}
+
+export interface Completeness {
+  passed: boolean
+  missing: string[]
+}
+
+export interface ExtractedFieldsResponse {
+  fields: ExtractedFields
+  completeness: Completeness
+}

@@ -1,4 +1,10 @@
-import type { PredictionResponse, HistoryResponse, StatsResponse, HistoryEntry } from './types'
+import type {
+  ExtractedFieldsResponse,
+  HistoryEntry,
+  HistoryResponse,
+  PredictionResponse,
+  StatsResponse,
+} from './types'
 
 const BASE = '/api'
 
@@ -38,6 +44,16 @@ export async function getClassification(id: number): Promise<HistoryEntry> {
 
 export function classificationPdfUrl(id: number): string {
   return `${BASE}/classifications/${id}/pdf`
+}
+
+export async function getClassificationFields(id: number): Promise<ExtractedFieldsResponse> {
+  const res = await fetch(`${BASE}/classifications/${id}/fields`)
+  if (!res.ok) {
+    if (res.status === 410) throw new Error('fields:410')
+    if (res.status === 404) throw new Error('fields:404')
+    throw new Error(`fields:${res.status}`)
+  }
+  return res.json()
 }
 
 export async function getStats(): Promise<StatsResponse> {

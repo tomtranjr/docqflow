@@ -1,18 +1,43 @@
 import { useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useUploadContext } from '@/context/UploadContext'
-import { classifyPDF } from '@/lib/api'
+import { useNotifications } from '@/context/NotificationsContext'
+import { classifyPDF, getClassificationFields } from '@/lib/api'
+import { buildFailNotification, buildPassNotification } from '@/lib/notifications'
 import { MAX_CONCURRENT_UPLOADS } from '@/lib/constants'
-import type { QueuedResult } from '@/lib/types'
+import type { PredictionResponse, QueuedResult } from '@/lib/types'
 
 type QueueItem = { id: string; file: File }
 
 export function useUpload() {
   const { items, dispatch, setQueueResults } = useUploadContext()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { push: pushNotification } = useNotifications()
   const queueRef = useRef<QueueItem[]>([])
   const activeRef = useRef(0)
+
+  const notifyFromCheck = useCallback(
+    async (prediction: PredictionResponse, filename: string) => {
+      if (prediction.label !== 'permit-3-8') return
+      try {
+        const data = await queryClient.fetchQuery({
+          queryKey: ['classification', prediction.id, 'fields'],
+          queryFn: () => getClassificationFields(prediction.id),
+        })
+        if (data.completeness.passed) {
+          pushNotification(buildPassNotification(prediction.id, filename))
+        } else {
+          pushNotification(buildFailNotification(prediction.id, filename, data.completeness))
+        }
+      } catch {
+        // Fields unavailable; do not push a misleading fail notification.
+      }
+    },
+    [queryClient, pushNotification],
+  )
 
   const uploadFile = useCallback(
     async (id: string, file: File) => {
@@ -63,6 +88,7 @@ export function useUpload() {
         const file = files[0]
         try {
           const result = await classifyPDF(file)
+          await notifyFromCheck(result, file.name)
           navigate(`/app/review/${result.id}`)
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Upload failed'
@@ -81,6 +107,7 @@ export function useUpload() {
           failures.push(files[idx].name)
         }
       })
+      await Promise.all(queued.map((q) => notifyFromCheck(q.result, q.filename)))
       if (failures.length > 0) {
         toast.error(
           `${failures.length} of ${files.length} uploads failed: ${failures.slice(0, 3).join(', ')}`,
@@ -89,7 +116,7 @@ export function useUpload() {
       setQueueResults(queued)
       navigate('/app/queue')
     },
-    [navigate, setQueueResults],
+    [navigate, setQueueResults, notifyFromCheck],
   )
 
   const clear = useCallback(() => dispatch({ type: 'CLEAR' }), [dispatch])

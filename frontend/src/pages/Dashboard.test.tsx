@@ -1,21 +1,28 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PreferencesProvider } from '@/context/PreferencesContext'
+import { NotificationsProvider } from '@/context/NotificationsContext'
 import { UploadProvider } from '@/context/UploadContext'
 import { Dashboard } from './Dashboard'
 
 function renderDashboard() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const router = createMemoryRouter(
     [{ path: '/', element: <Dashboard /> }],
     { initialEntries: ['/'] },
   )
   return render(
-    <PreferencesProvider>
-      <UploadProvider>
-        <RouterProvider router={router} />
-      </UploadProvider>
-    </PreferencesProvider>,
+    <QueryClientProvider client={queryClient}>
+      <PreferencesProvider>
+        <NotificationsProvider>
+          <UploadProvider>
+            <RouterProvider router={router} />
+          </UploadProvider>
+        </NotificationsProvider>
+      </PreferencesProvider>
+    </QueryClientProvider>,
   )
 }
 
