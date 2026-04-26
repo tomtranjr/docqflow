@@ -32,6 +32,14 @@ export async function getHistoryEntry(id: number): Promise<HistoryEntry> {
   return fetchJSON<HistoryEntry>(`${BASE}/history/${id}`)
 }
 
+export async function getClassification(id: number): Promise<HistoryEntry> {
+  return fetchJSON<HistoryEntry>(`${BASE}/classifications/${id}`)
+}
+
+export function classificationPdfUrl(id: number): string {
+  return `${BASE}/classifications/${id}/pdf`
+}
+
 export async function getStats(): Promise<StatsResponse> {
   return fetchJSON<StatsResponse>(`${BASE}/stats`)
 }
