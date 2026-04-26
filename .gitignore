@@ -214,3 +214,4 @@ mlruns/
 node_modules/
 frontend/dist/
 .vite/
+!frontend/src/lib/

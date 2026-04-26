@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from classify import load_model
+from src.api.config import load_settings
 from src.api.database import init_db
 
 _pipeline = None
@@ -19,6 +20,8 @@ async def lifespan(app: FastAPI):
     global _pipeline
     _pipeline = load_model()
     await init_db()
+    settings = load_settings()
+    os.makedirs(settings.pdf_dir, exist_ok=True)
     yield
 
 

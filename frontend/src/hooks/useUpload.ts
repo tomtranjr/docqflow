@@ -1,16 +1,16 @@
 import { useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useUploadContext } from '@/context/UploadContext'
 import { classifyPDF } from '@/lib/api'
 import { MAX_CONCURRENT_UPLOADS } from '@/lib/constants'
-
-function makeId(file: File): string {
-  return `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
+import type { QueuedResult } from '@/lib/types'
 
 type QueueItem = { id: string; file: File }
 
 export function useUpload() {
-  const { items, dispatch } = useUploadContext()
+  const { items, dispatch, setQueueResults } = useUploadContext()
+  const navigate = useNavigate()
   const queueRef = useRef<QueueItem[]>([])
   const activeRef = useRef(0)
 
@@ -56,12 +56,40 @@ export function useUpload() {
   )
 
   const addAndProcess = useCallback(
-    (files: File[]) => {
-      const newItems = files.map((file) => ({ id: makeId(file), file }))
-      dispatch({ type: 'ADD_FILES', items: newItems })
-      enqueue(newItems)
+    async (files: File[]) => {
+      if (files.length === 0) return
+
+      if (files.length === 1) {
+        const file = files[0]
+        try {
+          const result = await classifyPDF(file)
+          navigate(`/review/${result.id}`)
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Upload failed'
+          toast.error(`Upload failed: ${message}`)
+        }
+        return
+      }
+
+      const settled = await Promise.allSettled(files.map((file) => classifyPDF(file)))
+      const queued: QueuedResult[] = []
+      const failures: string[] = []
+      settled.forEach((outcome, idx) => {
+        if (outcome.status === 'fulfilled') {
+          queued.push({ filename: files[idx].name, result: outcome.value })
+        } else {
+          failures.push(files[idx].name)
+        }
+      })
+      if (failures.length > 0) {
+        toast.error(
+          `${failures.length} of ${files.length} uploads failed: ${failures.slice(0, 3).join(', ')}`,
+        )
+      }
+      setQueueResults(queued)
+      navigate('/queue')
     },
-    [dispatch, enqueue],
+    [navigate, setQueueResults],
   )
 
   const clear = useCallback(() => dispatch({ type: 'CLEAR' }), [dispatch])

@@ -1,5 +1,14 @@
-import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from 'react'
-import type { UploadItem, PredictionResponse } from '@/lib/types'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useReducer,
+  useState,
+  type ReactNode,
+  type Dispatch,
+} from 'react'
+import type { UploadItem, PredictionResponse, QueuedResult } from '@/lib/types'
 
 type Action =
   | { type: 'ADD_FILES'; items: { id: string; file: File }[] }
@@ -34,11 +43,34 @@ function reducer(state: UploadItem[], action: Action): UploadItem[] {
   }
 }
 
-const UploadContext = createContext<{ items: UploadItem[]; dispatch: Dispatch<Action> } | null>(null)
+interface UploadContextValue {
+  items: UploadItem[]
+  dispatch: Dispatch<Action>
+  queueResults: QueuedResult[]
+  setQueueResults: (results: QueuedResult[]) => void
+  clearQueueResults: () => void
+}
+
+const UploadContext = createContext<UploadContextValue | null>(null)
 
 export function UploadProvider({ children }: { children: ReactNode }) {
   const [items, dispatch] = useReducer(reducer, [])
-  return <UploadContext.Provider value={{ items, dispatch }}>{children}</UploadContext.Provider>
+  const [queueResults, setQueueResultsState] = useState<QueuedResult[]>([])
+
+  const setQueueResults = useCallback((results: QueuedResult[]) => {
+    setQueueResultsState(results)
+  }, [])
+
+  const clearQueueResults = useCallback(() => {
+    setQueueResultsState([])
+  }, [])
+
+  const value = useMemo<UploadContextValue>(
+    () => ({ items, dispatch, queueResults, setQueueResults, clearQueueResults }),
+    [items, queueResults, setQueueResults, clearQueueResults],
+  )
+
+  return <UploadContext.Provider value={value}>{children}</UploadContext.Provider>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -10,6 +10,7 @@ class HistoryEntry(BaseModel):
     probabilities: dict[str, float]
     text_preview: str | None = None
     file_size: int | None = None
+    pdf_sha256: str | None = None
 
 
 class HistoryResponse(BaseModel):
