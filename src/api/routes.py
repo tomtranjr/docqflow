@@ -5,8 +5,17 @@ from json import JSONDecodeError
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
+from .completeness import evaluate as evaluate_completeness
 from .database import get_classification, get_history, get_stats
-from .models import HistoryEntry, HistoryResponse, StatsResponse
+from .models import (
+    Completeness,
+    ExtractedFields,
+    ExtractedFieldsResponse,
+    HistoryEntry,
+    HistoryResponse,
+    StatsResponse,
+)
+from .pdf_fields import extract_form_3_8_fields
 from .pdf_storage import pdf_path
 
 router = APIRouter()
@@ -75,6 +84,44 @@ async def get_classification_metadata(classification_id: int):
         except JSONDecodeError:
             probs = {}
     return HistoryEntry(**{**result, "probabilities": probs})
+
+
+@router.get(
+    "/classifications/{classification_id}/fields",
+    response_model=ExtractedFieldsResponse,
+)
+async def get_classification_fields(classification_id: int):
+    """Return Form 3-8 AcroForm extraction + completeness for a stored PDF."""
+    row = await get_classification(classification_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Classification not found")
+    sha = row.get("pdf_sha256")
+    if not sha:
+        return JSONResponse(
+            status_code=410,
+            content={
+                "error_code": "pdf_missing",
+                "message": "PDF unavailable for legacy submission",
+            },
+        )
+    path = pdf_path(sha)
+    try:
+        with open(path, "rb") as f:
+            pdf_bytes = f.read()
+    except FileNotFoundError:
+        return JSONResponse(
+            status_code=410,
+            content={
+                "error_code": "pdf_missing",
+                "message": "PDF file missing on disk",
+            },
+        )
+    fields_dict = extract_form_3_8_fields(pdf_bytes)
+    completeness = evaluate_completeness(fields_dict)
+    return ExtractedFieldsResponse(
+        fields=ExtractedFields(**fields_dict),
+        completeness=Completeness(passed=completeness.passed, missing=completeness.missing),
+    )
 
 
 @router.get("/classifications/{classification_id}/pdf")
