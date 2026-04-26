@@ -33,6 +33,7 @@ import time
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 from pypdf import PdfReader, PdfWriter
 
 logger = logging.getLogger(__name__)
@@ -159,17 +160,18 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
         r1 = session.get(f"{DBI_BASE}/default.aspx?page=PermitType", timeout=15)
         r1.raise_for_status()
 
-        vs = re.search(r'__VIEWSTATE.*?value="(.*?)"', r1.text)
-        vsg = re.search(r'__VIEWSTATEGENERATOR.*?value="(.*?)"', r1.text)
-        ev = re.search(r'__EVENTVALIDATION.*?value="(.*?)"', r1.text)
-        if not (vs and vsg and ev):
-            logger.warning("Could not extract ViewState for %s", permit_number)
-            return None
+        search_soup = BeautifulSoup(r1.text, "html.parser")
+        viewstate_fields = ("__VIEWSTATE", "__VIEWSTATEGENERATOR", "__EVENTVALIDATION")
+        viewstate = {}
+        for name in viewstate_fields:
+            tag = search_soup.find("input", {"name": name})
+            if tag is None or not tag.get("value"):
+                logger.warning("Could not extract %s for %s", name, permit_number)
+                return None
+            viewstate[name] = tag["value"]
 
         form_data = {
-            "__VIEWSTATE": vs.group(1),
-            "__VIEWSTATEGENERATOR": vsg.group(1),
-            "__EVENTVALIDATION": ev.group(1),
+            **viewstate,
             "InfoReq1$optPermitTypes": "Building",
             "InfoReq1$txtPermitComplaintNumber": permit_number,
             "InfoReq1$cmdContinue": "Continue",
@@ -188,7 +190,7 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
             )
             return None
 
-        contractor = {}
+        details_soup = BeautifulSoup(r3.text, "html.parser")
         span_map = {
             "InfoReq1_lblLicNo": "license_number",
             "InfoReq1_lblContractorName": "contractor_name",
@@ -196,12 +198,14 @@ def scrape_contractor(session: requests.Session, permit_number: str) -> dict | N
             "InfoReq1_lblContractorAddr": "contractor_address",
             "InfoReq1_lblPhone": "contractor_phone",
         }
+        contractor = {}
         for span_id, key in span_map.items():
-            match = re.search(rf'id="{span_id}"[^>]*>(.*?)</span>', r3.text, re.DOTALL)
-            if match:
-                value = re.sub(r"<[^>]+>", "", match.group(1)).strip()
-                if value:
-                    contractor[key] = value
+            tag = details_soup.find(id=span_id)
+            if tag is None:
+                continue
+            value = tag.get_text(strip=True)
+            if value:
+                contractor[key] = value
 
         return contractor if contractor else None
 
@@ -509,7 +513,10 @@ def _major_description_mismatch(
 def _major_cost_scope_mismatch(
     record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
 ) -> dict | None:
-    """Swap cost with one from a record on the opposite side of the cost median."""
+    """Swap cost with one from a record on the opposite side of the cost median.
+
+    Small pools (e.g. <8 records) may yield few candidates on one side of the median.
+    """
     own_cost = _parse_cost(record)
     if own_cost is None:
         return None
@@ -543,7 +550,7 @@ def _major_cost_scope_mismatch(
 
 def _major_date_impossibility(
     record: dict, fields: dict, rng: random.Random, full_pool: list[dict]
-) -> dict | None:
+) -> list[dict] | None:
     """Swap DATE FILED and ISSUED so issued precedes filed (logically impossible)."""
     filed_key, issued_key = "DATE FILED", "ISSUED"
     filed_val = fields.get(filed_key, "")
@@ -552,12 +559,10 @@ def _major_date_impossibility(
         return None
     fields[filed_key] = issued_val
     fields[issued_key] = filed_val
-    return _record_change(
-        f"{filed_key} <-> {issued_key}",
-        f"filed={filed_val}, issued={issued_val}",
-        f"filed={issued_val}, issued={filed_val}",
-        "date_impossibility_swap",
-    )
+    return [
+        _record_change(filed_key, filed_val, issued_val, "date_impossibility_swap"),
+        _record_change(issued_key, issued_val, filed_val, "date_impossibility_swap"),
+    ]
 
 
 def _major_address_block_lot_mismatch(
@@ -585,6 +590,8 @@ def _major_address_block_lot_mismatch(
     return _record_change(key, before, new_val, "address_block_lot_mismatch")
 
 
+# All major mutations share signature (record, fields, rng, full_pool) for uniform
+# dispatch, even when they don't use every argument.
 MAJOR_MUTATIONS = [
     _major_description_mismatch,
     _major_cost_scope_mismatch,
@@ -596,14 +603,18 @@ MAJOR_MUTATIONS = [
 def corrupt_major(
     record: dict, fields: dict, full_pool: list[dict]
 ) -> tuple[dict, list[dict]]:
-    """Apply one major mutation, sampled uniformly across the four types via deterministic shuffle."""
+    """Apply one major mutation, sampled uniformly across applicable types via deterministic shuffle."""
     rng = random.Random(_seed_for(record.get("permit_number", "")))
     candidates = MAJOR_MUTATIONS.copy()
     rng.shuffle(candidates)
     for mutation in candidates:
         result = mutation(record, fields, rng, full_pool)
-        if result is not None:
-            return fields, [result]
+        if result:
+            return fields, result if isinstance(result, list) else [result]
+    logger.warning(
+        "All major mutations failed for permit %s; producing major PDF with no mutations.",
+        record.get("permit_number", ""),
+    )
     return fields, []
 
 
@@ -700,7 +711,8 @@ def build_plan(n_correct: int, n_minor: int, n_major: int) -> list[str]:
     return ["correct"] * n_correct + ["minor"] * n_minor + ["major"] * n_major
 
 
-def main():
+def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for the generator."""
     parser = argparse.ArgumentParser(
         description="Generate Form 3-8 PDFs (correct/minor/major) for the validation pipeline"
     )
@@ -733,37 +745,15 @@ def main():
         "--delay", type=float, default=3.0, help="Delay between DBI requests"
     )
     parser.add_argument("--verbose", action="store_true")
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
 
-    template = Path(args.template)
-    if not template.exists():
-        logger.error("Template not found: %s", template)
-        return
-
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    if args.reset:
-        reset_output_dir(output_dir, template)
-
-    plan = build_plan(args.correct, args.minor, args.major)
-    if not plan:
-        logger.error("Nothing to generate (all counts are zero)")
-        return
-
-    used = load_manifest(output_dir)
-    logger.info("Manifest has %d permit numbers already used", len(used))
-
+def prepare_records(plan: list[str], used: set[str]) -> list[dict]:
+    """Fetch from SODA and filter out used/duplicate/incomplete records."""
     fetch_target = len(plan) * 3
     records = fetch_permits(fetch_target, offset=0)
     if not records:
-        logger.error("No records fetched from SODA API")
-        return
+        return []
 
     seen: set[str] = set()
     valid: list[dict] = []
@@ -781,12 +771,22 @@ def main():
             len(valid),
             len(plan),
         )
+    return valid
 
+
+def run_generation_loop(
+    plan: list[str],
+    valid: list[dict],
+    args: argparse.Namespace,
+    template: Path,
+    output_dir: Path,
+    used: set[str],
+    labels: dict,
+) -> tuple[dict, dict]:
+    """Generate PDFs slot by slot. Returns (counts, minor_histogram)."""
     session = requests.Session() if not args.skip_scrape else None
-
     counts = {"correct": 0, "minor": 0, "major": 0}
     minor_histogram: dict[int, int] = {}
-    labels = load_labels(output_dir)
     record_iter = iter(valid)
 
     for i, flavor in enumerate(plan):
@@ -817,7 +817,6 @@ def main():
             fields, mutation_records = corrupt_major(record, fields, valid)
 
         mutation_count = len(mutation_records)
-
         filename = output_filename(flavor, permit_num, mutation_count)
         out_path = output_dir / filename
 
@@ -837,6 +836,11 @@ def main():
         else:
             logger.warning("Skipped %s due to fill error", filename)
 
+    return counts, minor_histogram
+
+
+def print_summary(counts: dict, minor_histogram: dict, output_dir: Path) -> None:
+    """Print the final per-flavor summary."""
     print("\nSummary:")
     print(f"  Correct:  {counts['correct']}")
     if minor_histogram:
@@ -847,6 +851,45 @@ def main():
     print(f"  Major:    {counts['major']}")
     print(f"  Output:   {output_dir}/")
     print(f"  Labels:   {output_dir}/{LABELS_FILE}")
+
+
+def main():
+    args = parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(levelname)s: %(message)s",
+    )
+
+    template = Path(args.template)
+    if not template.exists():
+        logger.error("Template not found: %s", template)
+        return
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.reset:
+        reset_output_dir(output_dir, template)
+
+    plan = build_plan(args.correct, args.minor, args.major)
+    if not plan:
+        logger.error("Nothing to generate (all counts are zero)")
+        return
+
+    used = load_manifest(output_dir)
+    logger.info("Manifest has %d permit numbers already used", len(used))
+
+    valid = prepare_records(plan, used)
+    if not valid:
+        logger.error("No records fetched from SODA API")
+        return
+
+    labels = load_labels(output_dir)
+    counts, minor_histogram = run_generation_loop(
+        plan, valid, args, template, output_dir, used, labels
+    )
+    print_summary(counts, minor_histogram, output_dir)
 
 
 if __name__ == "__main__":

@@ -19,19 +19,19 @@ The script generates three flavors of PDFs:
 Default (50 correct / 30 minor / 20 major = 100 PDFs):
 
 ```bash
-uv run python generate_permits.py
+uv run python scripts/generate_permits.py
 ```
 
 Smoke run (no DBI scraping, small batch, wipe before generating):
 
 ```bash
-uv run python generate_permits.py --reset --correct 4 --minor 3 --major 3 --skip-scrape
+uv run python scripts/generate_permits.py --reset --correct 4 --minor 3 --major 3 --skip-scrape
 ```
 
 Custom split:
 
 ```bash
-uv run python generate_permits.py --reset --correct 70 --minor 20 --major 10
+uv run python scripts/generate_permits.py --reset --correct 70 --minor 20 --major 10
 ```
 
 ## Filename scheme
