@@ -109,10 +109,10 @@ Every run writes `data/permit-3-8/labels.json` — the supervised-learning answe
     "mutation_count": 2,
     "mutations": [
       {
-        "field": "9 NO OF DWELLING UNITS",
-        "before": "1",
-        "after": "1.0",
-        "kind": "units_to_float"
+        "field": "2A ESTIMATED COST OF JOB",
+        "before": "$45,000",
+        "after": "45000",
+        "kind": "cost_format"
       },
       {
         "field": "1 STREET ADDRESS OF JOB BLOCK  LOT",
