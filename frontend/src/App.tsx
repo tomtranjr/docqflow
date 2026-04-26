@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ThemeProvider } from '@/context/ThemeContext'
+import { PreferencesProvider } from '@/context/PreferencesContext'
 import { UploadProvider } from '@/context/UploadContext'
 import { Shell } from '@/components/layout/Shell'
 import { ErrorBoundary } from '@/components/feedback/ErrorBoundary'
@@ -24,11 +24,11 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <PreferencesProvider>
       <UploadProvider>
         <RouterProvider router={router} />
         <Toaster position="bottom-right" richColors />
       </UploadProvider>
-    </ThemeProvider>
+    </PreferencesProvider>
   )
 }

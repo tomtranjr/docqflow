@@ -1,5 +1,5 @@
 import { Sun, Moon, Monitor } from 'lucide-react'
-import { useTheme } from '@/context/ThemeContext'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const THEMES = [
   { value: 'light' as const, icon: Sun, label: 'Light' },
@@ -8,7 +8,7 @@ const THEMES = [
 ]
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = usePreferences()
 
   return (
     <div className="flex items-center gap-1 rounded border border-white/20 p-0.5">

@@ -1,9 +1,9 @@
-import { useTheme } from '@/context/ThemeContext'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const THEME_OPTIONS = ['light', 'dark', 'system'] as const
 
 export function Settings() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = usePreferences()
 
   return (
     <div className="max-w-md">
