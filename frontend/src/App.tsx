@@ -2,22 +2,33 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { PreferencesProvider } from '@/context/PreferencesContext'
 import { UploadProvider } from '@/context/UploadContext'
-import { Shell } from '@/components/layout/Shell'
+import { DashboardShell } from '@/components/layout/DashboardShell'
+import { WorkspaceShell } from '@/components/layout/WorkspaceShell'
 import { ErrorBoundary } from '@/components/feedback/ErrorBoundary'
-import { Classify } from '@/pages/Classify'
-import { History } from '@/pages/History'
-import { About } from '@/pages/About'
+import { Dashboard } from '@/pages/Dashboard'
+import { Review } from '@/pages/Review'
+import { Queue } from '@/pages/Queue'
+import { Submissions } from '@/pages/Submissions'
+import { Reports } from '@/pages/Reports'
 import { Settings } from '@/pages/Settings'
+import { About } from '@/pages/About'
 
 const router = createBrowserRouter([
   {
-    element: <Shell />,
+    element: <DashboardShell />,
+    errorElement: <ErrorBoundary />,
+    children: [{ path: '/', element: <Dashboard /> }],
+  },
+  {
+    element: <WorkspaceShell />,
     errorElement: <ErrorBoundary />,
     children: [
-      { path: '/', element: <Classify /> },
-      { path: '/history', element: <History /> },
-      { path: '/about', element: <About /> },
+      { path: '/review/:id', element: <Review /> },
+      { path: '/queue', element: <Queue /> },
+      { path: '/submissions', element: <Submissions /> },
+      { path: '/reports', element: <Reports /> },
       { path: '/settings', element: <Settings /> },
+      { path: '/about', element: <About /> },
     ],
   },
 ])
