@@ -6,8 +6,8 @@ output, so the rule must have a single source of truth.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 REQUIRED_FIELDS: tuple[str, ...] = (
     "application_number",
