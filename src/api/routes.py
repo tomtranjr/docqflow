@@ -187,7 +187,9 @@ async def get_classification_fields(classification_id: int):
     completeness = evaluate_completeness(fields_dict)
     return ExtractedFieldsResponse(
         fields=ExtractedFields(**fields_dict),
-        completeness=Completeness(passed=completeness.passed, missing=completeness.missing),
+        completeness=Completeness(
+            passed=completeness.passed, missing=completeness.missing
+        ),
     )
 
 

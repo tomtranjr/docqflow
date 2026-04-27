@@ -9,6 +9,7 @@ If a PDF has no AcroForm at all (typical for non-permit uploads), every key
 resolves to None — the binary classifier has already labelled the doc
 "not-permit-3-8" so the UI never asks for fields anyway.
 """
+
 from __future__ import annotations
 
 import logging

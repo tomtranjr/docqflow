@@ -4,6 +4,7 @@ Lives server-side because the rule is a business policy that the SF DBI revises
 periodically. Audit trails and notification messages both consume the same
 output, so the rule must have a single source of truth.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
