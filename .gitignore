@@ -215,3 +215,8 @@ node_modules/
 frontend/dist/
 .vite/
 !frontend/src/lib/
+
+# Claude Code / agent tooling local artifacts
+.claude-flow/
+.claude/
+.swarm/
