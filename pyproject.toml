@@ -5,12 +5,15 @@ description = "PDF document classifier using TF-IDF + Logistic Regression, serve
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "beautifulsoup4>=4.14.3",
     "fastapi>=0.135.2",
     "joblib>=1.5.3",
     "mlflow>=3.10.1",
     "pymupdf>=1.27.2.2",
+    "pypdf>=6.9.2",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.22",
+    "requests>=2.33.0",
     "scikit-learn>=1.8.0",
     "uvicorn>=0.42.0",
     "aiosqlite>=0.20.0",

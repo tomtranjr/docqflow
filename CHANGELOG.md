@@ -4,6 +4,13 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 
 ## 2026-04-26
 
+### Added
+
+- `scripts/generate_permits.py`: one-shot training-data generator that builds Form 3-8 PDFs from SF Data Portal records. Produces three flavors in a single batch — `correct` (ground truth), `minor` (1–3 field-level mutations), `major` (one cross-field contradiction across semantic, numerical, temporal, or spatial axes).
+- `data/permit-3-8/labels.json`: per-PDF supervised-learning answer key written on every run, recording each mutation's field, before/after values, and `kind` tag.
+- Deterministic mutation seeding (`sha256(permit_number)`) so re-runs produce byte-identical PDFs, and a manifest (`.manifest.json`) so re-runs append new permits instead of duplicating. `--reset` wipes for a clean regeneration.
+- Design doc at `docs/permit-generation.md` covering flavors, mutation types, CLI flags, and how to use `labels.json` for pipeline evaluation.
+
 ### Changed
 
 - Reorganized project layout: moved `server.py` and `classify.py` into `src/` (renamed to `src/classifier.py`), folded the misnamed `app.py` router into `src/api/routes.py`, and moved the MLflow connection probe `main.py` to `scripts/check_mlflow.py`. The repo root no longer contains loose Python modules.
