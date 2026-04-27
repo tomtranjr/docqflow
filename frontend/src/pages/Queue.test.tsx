@@ -68,7 +68,7 @@ describe('Queue', () => {
       },
     ])
 
-    expect(await screen.findByText('permit-1.pdf')).toBeInTheDocument()
-    expect(screen.getByText('permit-2.pdf')).toBeInTheDocument()
+    expect(await screen.findByText(/permit-1\.pdf/)).toBeInTheDocument()
+    expect(screen.getByText(/permit-2\.pdf/)).toBeInTheDocument()
   })
 })

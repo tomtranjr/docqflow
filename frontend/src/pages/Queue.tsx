@@ -1,25 +1,61 @@
+import { useMemo } from 'react'
 import { useUploadContext } from '@/context/UploadContext'
-import { QueueGrid } from '@/components/queue/QueueGrid'
+import { ReviewQueueRow } from '@/components/queue/ReviewQueueRow'
+import { permitDepartment } from '@/lib/permitData'
+import type { ReviewQueueRow as ReviewQueueRowData } from '@/hooks/useReviewQueue'
+import type { QueuedResult } from '@/lib/types'
+
+function toRow(q: QueuedResult): ReviewQueueRowData {
+  const confidence = q.result.probabilities[q.result.label] ?? 0
+  return {
+    id: String(q.result.id),
+    applicantOrFilename: q.filename,
+    address: q.result.label,
+    type: q.result.label,
+    department: permitDepartment(q.result.label),
+    confidence,
+    daysOpen: 0,
+    flags: 0,
+    reviewHref: `/app/review/${q.result.id}`,
+  }
+}
 
 export function Queue() {
   const { queueResults } = useUploadContext()
+  const rows = useMemo(() => queueResults.map(toRow), [queueResults])
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
+    <div style={{ padding: 'var(--pad-page)', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div>
+        <div className="label-eyebrow" style={{ marginBottom: 4 }}>Review</div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
           Classification queue
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Recently uploaded documents. Click a thumbnail to review.
+        <p style={{ fontSize: 13, color: 'var(--ink-3)', margin: '4px 0 0' }}>
+          {rows.length === 0
+            ? 'Recently uploaded documents. Click a row to review.'
+            : `${rows.length} document${rows.length === 1 ? '' : 's'} ready for review`}
         </p>
-      </header>
-      {queueResults.length === 0 ? (
-        <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-elev1)] p-8 text-center text-sm text-[var(--color-text-muted)]">
+      </div>
+
+      {rows.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            padding: '32px 24px',
+            textAlign: 'center',
+            color: 'var(--ink-3)',
+            fontSize: 13,
+          }}
+        >
           No documents in the queue. Upload from the dashboard to get started.
         </div>
       ) : (
-        <QueueGrid items={queueResults} />
+        <div className="card" style={{ padding: 0 }}>
+          {rows.map((row, i) => (
+            <ReviewQueueRow key={row.id} row={row} isLast={i === rows.length - 1} />
+          ))}
+        </div>
       )}
     </div>
   )
