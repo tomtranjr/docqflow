@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from classify import predict_from_text
+from src.classifier import predict_from_text
 
 SAMPLE_TEXTS = [
     "City of San Francisco permit application form 3-8 building department",

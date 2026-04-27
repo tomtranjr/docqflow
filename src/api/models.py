@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 
 
+class PredictionResponse(BaseModel):
+    id: int
+    label: str
+    probabilities: dict[str, float]
+    pdf_sha256: str
+
+
 class HistoryEntry(BaseModel):
     id: int
     filename: str

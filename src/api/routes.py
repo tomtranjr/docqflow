@@ -2,21 +2,33 @@ import json
 import re
 from json import JSONDecodeError
 
-from fastapi import APIRouter, HTTPException
+import fitz
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 
+from src.classifier import extract_text_from_bytes, predict_from_text
+
 from .completeness import evaluate as evaluate_completeness
-from .database import get_classification, get_history, get_stats
+from .database import (
+    get_classification,
+    get_history,
+    get_stats,
+    save_classification,
+)
+from .documents import upsert_document
 from .models import (
     Completeness,
     ExtractedFields,
     ExtractedFieldsResponse,
     HistoryEntry,
     HistoryResponse,
+    PredictionResponse,
     StatsResponse,
 )
 from .pdf_fields import extract_form_3_8_fields
-from .pdf_storage import pdf_path
+from .pdf_storage import compute_sha256, pdf_path, save_pdf
+
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB; matches the frontend hint
 
 router = APIRouter()
 
@@ -27,6 +39,61 @@ def _safe_disposition_filename(filename: str) -> str:
     """Strip CRLF, quotes, and backslashes from filenames before reflecting them
     into Content-Disposition. Prevents response header injection."""
     return _FILENAME_UNSAFE.sub("_", filename)
+
+
+@router.get("/health")
+def health(request: Request):
+    pipeline = getattr(request.app.state, "pipeline", None)
+    return {"status": "ok", "model_loaded": pipeline is not None}
+
+
+@router.post("/predict", response_model=PredictionResponse)
+async def predict_pdf(request: Request, file: UploadFile):
+    pipeline = getattr(request.app.state, "pipeline", None)
+    if pipeline is None:
+        raise HTTPException(
+            status_code=503, detail="Model not loaded. Train a model first."
+        )
+
+    pdf_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(pdf_bytes) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit",
+        )
+    try:
+        text = extract_text_from_bytes(pdf_bytes)
+    except fitz.FileDataError as exc:
+        raise HTTPException(
+            status_code=422, detail="File is not a readable PDF"
+        ) from exc
+
+    if not text.strip():
+        raise HTTPException(status_code=422, detail="PDF valid but not processable")
+
+    sha = compute_sha256(pdf_bytes)
+    save_pdf(pdf_bytes, sha)
+    await upsert_document(sha, len(pdf_bytes))
+
+    result = predict_from_text(pipeline, text)
+    confidence = max(result["probabilities"].values())
+
+    new_id = await save_classification(
+        filename=file.filename or "unknown.pdf",
+        label=result["label"],
+        confidence=confidence,
+        probabilities=result["probabilities"],
+        text_preview=text[:500] if text else None,
+        file_size=len(pdf_bytes),
+        pdf_sha256=sha,
+    )
+
+    return {
+        "id": new_id,
+        "label": result["label"],
+        "probabilities": result["probabilities"],
+        "pdf_sha256": sha,
+    }
 
 
 @router.get("/history", response_model=HistoryResponse)
