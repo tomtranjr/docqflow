@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { CheckIcon, Icons, XIcon } from '@/components/brand/icons'
-import { Logo } from '@/components/brand/Logo'
+import { AboutContent } from '@/components/about/AboutContent'
 import { DEPARTMENTS } from '@/lib/permitData'
 import { usePreferences, useShowConfidence } from '@/context/PreferencesContext'
 
@@ -403,81 +403,7 @@ function SecuritySection() {
 }
 
 function AboutSection() {
-  return (
-    <>
-      <div style={{ marginBottom: 22 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px' }}>About DocQFlow</h2>
-        <p style={{ fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>How the system works, end to end.</p>
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 22,
-          padding: '26px 28px',
-          background: 'linear-gradient(135deg, var(--blue-50) 0%, var(--surface-card) 60%)',
-          border: '1px solid var(--line)',
-          borderRadius: 'var(--r-lg)',
-          marginBottom: 24,
-        }}
-      >
-        <Logo size={72} />
-        <div>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              letterSpacing: '0.02em',
-              lineHeight: 1,
-              fontFamily: 'var(--font-display)',
-            }}
-          >
-            <span style={{ color: 'var(--ink)' }}>DOCQ</span>
-            <span style={{ color: 'var(--blue-500)' }}>FLOW</span>
-          </div>
-          <div style={{ marginTop: 10, fontSize: 16, color: 'var(--ink)', fontWeight: 500, lineHeight: 1.4, maxWidth: 480 }}>
-            Intelligent Document Processing for Smarter Permitting.
-          </div>
-          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--ink-3)', maxWidth: 540 }}>
-            Built for the City &amp; County of San Francisco — accelerating permit review while keeping a human in the
-            loop on every decision.
-          </div>
-        </div>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: 'var(--ink-3)', textAlign: 'right' }}>
-          <div>
-            <span className="mono">v2.4.0</span> · Released Mar 2026
-          </div>
-          <div>SOC 2 Type II · CJIS-aligned</div>
-          <div>WCAG 2.1 AA</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {[
-          'Python 3.12',
-          'FastAPI',
-          'Postgres 16',
-          'GCS',
-          'Cloud Run',
-          'Pub/Sub',
-          'PaddleOCR',
-          'Gemini 1.5 Flash',
-          'MLflow',
-          'Docker',
-          'GitHub Actions',
-          'Terraform',
-          'OpenTelemetry',
-          'React 19',
-        ].map((s) => (
-          <span key={s} className="pill" style={{ height: 22, fontSize: 11 }}>
-            {s}
-          </span>
-        ))}
-      </div>
-    </>
-  )
+  return <AboutContent />
 }
 
 export function Settings() {

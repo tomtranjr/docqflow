@@ -21,14 +21,24 @@ const DEPT_ICONS: Record<Permit['department'], keyof typeof Icons> = {
 
 interface KanbanCardProps {
   p: Permit
+  onDragStart?: (id: string) => void
+  onDragEnd?: () => void
+  isDragging?: boolean
 }
 
-export function KanbanCard({ p }: KanbanCardProps) {
+export function KanbanCard({ p, onDragStart, onDragEnd, isDragging = false }: KanbanCardProps) {
   const navigate = useNavigate()
   const Icon = Icons[DEPT_ICONS[p.department]]
   return (
     <button
       type="button"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', p.id)
+        onDragStart?.(p.id)
+      }}
+      onDragEnd={() => onDragEnd?.()}
       onClick={() => navigate(`/app/review/${p.id}`)}
       style={{
         display: 'flex',
@@ -38,12 +48,14 @@ export function KanbanCard({ p }: KanbanCardProps) {
         border: '1px solid var(--line)',
         borderRadius: 'var(--r)',
         padding: '12px',
-        cursor: 'pointer',
+        cursor: isDragging ? 'grabbing' : 'grab',
         textAlign: 'left',
         boxShadow: 'var(--shadow-1)',
-        transition: 'transform .12s var(--ease), box-shadow .12s var(--ease)',
+        opacity: isDragging ? 0.4 : 1,
+        transition: 'transform .12s var(--ease), box-shadow .12s var(--ease), opacity .12s var(--ease)',
       }}
       onMouseEnter={(e) => {
+        if (isDragging) return
         e.currentTarget.style.transform = 'translateY(-2px)'
         e.currentTarget.style.boxShadow = 'var(--shadow-2)'
       }}

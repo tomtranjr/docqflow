@@ -1,77 +1,26 @@
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useReviewerName } from '@/context/PreferencesContext'
-import { useHistory } from '@/hooks/useHistory'
+import { useFirstName } from '@/context/PreferencesContext'
+import { useReviewQueue } from '@/hooks/useReviewQueue'
 import { ArrowIcon } from '@/components/brand/icons'
 import { SFSeal } from '@/components/brand/SFSeal'
 import { KpiCard } from '@/components/dashboard/KpiCard'
-import { DocAvatar } from '@/components/dashboard/DocAvatar'
-import { ConfMini } from '@/components/dashboard/ConfMini'
 import { PipelineStack } from '@/components/dashboard/PipelineStack'
 import { Activity } from '@/components/dashboard/Activity'
 import { DeptCard } from '@/components/dashboard/DeptCard'
-import { DEPARTMENTS, PERMITS, permitDepartment, type Permit } from '@/lib/permitData'
+import { ReviewQueueRow } from '@/components/queue/ReviewQueueRow'
+import { DEPARTMENTS, PERMITS } from '@/lib/permitData'
 
 function formatDayString(): string {
   const now = new Date()
   return now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
-interface QueueRow {
-  id: string
-  applicantOrFilename: string
-  address: string | null
-  type: string
-  department: Permit['department']
-  confidence: number
-  daysOpen: number
-  flags: number
-  reviewHref: string
-}
-
-function rowsFromMock(): QueueRow[] {
-  return PERMITS.filter((p) => p.stage === 'review')
-    .slice(0, 5)
-    .map((p) => ({
-      id: p.id,
-      applicantOrFilename: p.applicant,
-      address: `${p.address} · ${p.type}`,
-      type: p.type,
-      department: p.department,
-      confidence: p.confidence,
-      daysOpen: p.daysOpen,
-      flags: p.flags.length,
-      reviewHref: `/app/review/${p.id}`,
-    }))
-}
-
 export function Dashboard() {
   const navigate = useNavigate()
-  const reviewerName = useReviewerName()
-  const { entries, loading } = useHistory()
+  const firstName = useFirstName()
+  const { rows: allRows, loading, isLive } = useReviewQueue()
 
-  const liveRows: QueueRow[] = useMemo(() => {
-    // Days-open is a label, not an invariant — capturing wall-clock here is fine.
-    // eslint-disable-next-line react-hooks/purity
-    const now = Date.now()
-    return entries.slice(0, 5).map((e) => {
-      const dept = permitDepartment(e.label)
-      const ageDays = Math.max(0, Math.floor((now - new Date(e.uploaded_at).getTime()) / (1000 * 60 * 60 * 24)))
-      return {
-        id: String(e.id),
-        applicantOrFilename: e.filename,
-        address: e.label,
-        type: e.label,
-        department: dept,
-        confidence: e.confidence,
-        daysOpen: ageDays,
-        flags: 0,
-        reviewHref: `/app/review/${e.id}`,
-      }
-    })
-  }, [entries])
-
-  const myQueue = liveRows.length > 0 ? liveRows : rowsFromMock()
+  const myQueue = allRows.slice(0, 5)
   const queueAll = PERMITS.filter((p) => p.stage === 'review')
   const queueAtRisk = queueAll.filter((p) => p.daysOpen >= 3).length
   const queueOldest = queueAll.reduce((a, p) => (p.daysOpen > a ? p.daysOpen : a), 0)
@@ -80,9 +29,9 @@ export function Dashboard() {
       ? Math.round((queueAll.reduce((a, p) => a + p.confidence, 0) / queueAll.length) * 100)
       : 0
 
-  const greeting = reviewerName && reviewerName !== 'Reviewer' ? reviewerName : 'Alex'
-  const resumePermit = liveRows[0]?.id ?? PERMITS[0].id
-  const resumeHref = liveRows[0]?.reviewHref ?? `/app/review/${PERMITS[0].id}`
+  const greeting = firstName.trim() || 'Alex'
+  const resumePermit = myQueue[0]?.id ?? PERMITS[0].id
+  const resumeHref = myQueue[0]?.reviewHref ?? `/app/review/${PERMITS[0].id}`
 
   return (
     <div style={{ padding: 'var(--pad-page)', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -192,7 +141,7 @@ export function Dashboard() {
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Your review queue</h2>
               <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: '2px 0 0' }}>
-                {loading ? 'Loading…' : `Permits ready for human verification${liveRows.length === 0 ? ' (demo data)' : ''}`}
+                {loading ? 'Loading…' : `Permits ready for human verification${isLive ? '' : ' (demo data)'}`}
               </p>
             </div>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => navigate('/app/submissions')}>
@@ -201,48 +150,7 @@ export function Dashboard() {
           </div>
           <div style={{ flex: 1 }}>
             {myQueue.map((row, i) => (
-              <button
-                key={row.id}
-                type="button"
-                onClick={() => navigate(row.reviewHref)}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'auto 1fr auto auto auto',
-                  gap: 16,
-                  alignItems: 'center',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '14px 20px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: i < myQueue.length - 1 ? '1px solid var(--line)' : 'none',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <DocAvatar dept={row.department} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                    {row.applicantOrFilename} ·{' '}
-                    <span className="mono" style={{ color: 'var(--ink-3)', fontWeight: 400 }}>
-                      {row.id}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{row.address}</div>
-                </div>
-                <ConfMini value={row.confidence} />
-                <span className="pill" style={{ fontSize: 10 }}>
-                  {row.daysOpen === 0 ? 'Today' : `${row.daysOpen}d open`}
-                </span>
-                {row.flags > 0 ? (
-                  <span className="pill pill-warn pill-dot" style={{ fontSize: 10 }}>
-                    {row.flags}
-                  </span>
-                ) : (
-                  <span style={{ width: 1 }} />
-                )}
-              </button>
+              <ReviewQueueRow key={row.id} row={row} isLast={i === myQueue.length - 1} />
             ))}
           </div>
           <div

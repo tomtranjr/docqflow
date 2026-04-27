@@ -1,12 +1,37 @@
+import { useState, type DragEvent } from 'react'
 import { ChevronDownIcon } from '@/components/brand/icons'
-import { STAGES, type Permit } from '@/lib/permitData'
+import { STAGES, type Permit, type StageKey } from '@/lib/permitData'
 import { KanbanCard } from './KanbanCard'
 
 interface KanbanBoardProps {
   permits: Permit[]
+  onMoveStage: (permitId: string, newStage: StageKey) => void
 }
 
-export function KanbanBoard({ permits }: KanbanBoardProps) {
+export function KanbanBoard({ permits, onMoveStage }: KanbanBoardProps) {
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [hoverStage, setHoverStage] = useState<StageKey | null>(null)
+
+  function handleDrop(e: DragEvent<HTMLDivElement>, stage: StageKey) {
+    e.preventDefault()
+    const permitId = e.dataTransfer.getData('text/plain')
+    if (permitId) {
+      const current = permits.find((p) => p.id === permitId)
+      if (current && current.stage !== stage) {
+        onMoveStage(permitId, stage)
+      }
+    }
+    setDraggingId(null)
+    setHoverStage(null)
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>, stage: StageKey) {
+    if (!draggingId) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (hoverStage !== stage) setHoverStage(stage)
+  }
+
   return (
     <div
       style={{
@@ -18,6 +43,7 @@ export function KanbanBoard({ permits }: KanbanBoardProps) {
     >
       {STAGES.map((s, i) => {
         const items = permits.filter((p) => p.stage === s.key)
+        const isHover = hoverStage === s.key
         return (
           <div key={s.key} style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
             <div
@@ -49,19 +75,36 @@ export function KanbanBoard({ permits }: KanbanBoardProps) {
               </button>
             </div>
             <div
+              onDragOver={(e) => handleDragOver(e, s.key)}
+              onDragLeave={() => {
+                if (hoverStage === s.key) setHoverStage(null)
+              }}
+              onDrop={(e) => handleDrop(e, s.key)}
               style={{
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
                 padding: '8px',
-                background: 'var(--surface-sunken)',
+                background: isHover ? 'var(--surface-hover)' : 'var(--surface-sunken)',
                 borderRadius: 'var(--r-md)',
                 minHeight: 200,
+                outline: isHover ? '2px dashed var(--blue-500)' : 'none',
+                outlineOffset: -2,
+                transition: 'background .12s var(--ease), outline-color .12s var(--ease)',
               }}
             >
               {items.map((p) => (
-                <KanbanCard key={p.id} p={p} />
+                <KanbanCard
+                  key={p.id}
+                  p={p}
+                  isDragging={draggingId === p.id}
+                  onDragStart={(id) => setDraggingId(id)}
+                  onDragEnd={() => {
+                    setDraggingId(null)
+                    setHoverStage(null)
+                  }}
+                />
               ))}
               {items.length === 0 && (
                 <div
@@ -76,7 +119,7 @@ export function KanbanBoard({ permits }: KanbanBoardProps) {
                     color: 'var(--ink-4)',
                   }}
                 >
-                  Empty
+                  {isHover ? 'Drop to move here' : 'Empty'}
                 </div>
               )}
             </div>

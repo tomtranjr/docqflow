@@ -5,11 +5,12 @@ import { UploadIcon } from '@/components/brand/icons'
 interface UploadButtonProps {
   variant?: 'accent' | 'ghost'
   label?: string
+  size?: 'sm' | 'md'
 }
 
 // Hidden file input + button that triggers the existing useUpload pipeline.
 // One PDF goes straight to /app/review/:id, multiple route to /app/queue.
-export function UploadButton({ variant = 'accent', label = 'Upload PDF' }: UploadButtonProps) {
+export function UploadButton({ variant = 'accent', label = 'Upload PDF', size = 'sm' }: UploadButtonProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const { addAndProcess } = useUpload()
 
@@ -19,11 +20,14 @@ export function UploadButton({ variant = 'accent', label = 'Upload PDF' }: Uploa
     if (files.length > 0) void addAndProcess(files)
   }
 
+  const base = variant === 'accent' ? 'btn btn-accent' : 'btn btn-ghost'
+  const className = size === 'sm' ? `${base} btn-sm` : base
+
   return (
     <>
       <button
         type="button"
-        className={variant === 'accent' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm'}
+        className={className}
         onClick={() => inputRef.current?.click()}
       >
         <UploadIcon size={14} />

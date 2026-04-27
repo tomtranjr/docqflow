@@ -39,12 +39,19 @@ export function Submissions() {
   const [view, setView] = useState<View>('board')
   const [filter, setFilter] = useState<DeptFilter>('all')
   const [search, setSearch] = useState('')
+  const [stageOverrides, setStageOverrides] = useState<Record<string, StageKey>>({})
   const { entries } = useHistory()
 
   const all = useMemo<Permit[]>(() => {
-    if (entries.length === 0) return PERMITS
-    return [...entries.map(liveToPermit), ...PERMITS]
-  }, [entries])
+    const base = entries.length === 0 ? PERMITS : [...entries.map(liveToPermit), ...PERMITS]
+    return base.map((p) =>
+      stageOverrides[p.id] ? { ...p, stage: stageOverrides[p.id] } : p
+    )
+  }, [entries, stageOverrides])
+
+  function handleMoveStage(permitId: string, newStage: StageKey) {
+    setStageOverrides((prev) => ({ ...prev, [permitId]: newStage }))
+  }
 
   const filtered = all.filter((p) => {
     if (filter !== 'all' && p.department !== filter) return false
@@ -66,11 +73,11 @@ export function Submissions() {
             {filtered.length} permits · 5 stages · live + demo data
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button type="button" className="btn">
             <DownloadIcon size={14} /> Export CSV
           </button>
-          <UploadButton />
+          <UploadButton size="md" />
         </div>
       </div>
 
@@ -159,7 +166,7 @@ export function Submissions() {
         </div>
       </div>
 
-      {view === 'board' && <KanbanBoard permits={filtered} />}
+      {view === 'board' && <KanbanBoard permits={filtered} onMoveStage={handleMoveStage} />}
       {view === 'table' && <SubmissionsTable permits={filtered} />}
       {view === 'map' && <MapView permits={filtered} />}
 

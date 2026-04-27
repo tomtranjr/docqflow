@@ -16,8 +16,9 @@ import {
 import { CommandPalette } from './CommandPalette'
 import { NotificationsPanel } from './NotificationsPanel'
 import { UploadButton } from './UploadButton'
-import { usePreferences, useReviewerName } from '@/context/PreferencesContext'
+import { useFirstName, useLastName, usePreferences, useReviewerName } from '@/context/PreferencesContext'
 import { useNotifications } from '@/context/NotificationsContext'
+import { useSubmissionsCount } from '@/hooks/useSubmissionsCount'
 
 const NAV = [
   { to: '/app', end: true, label: 'Dashboard', icon: DashboardIcon },
@@ -38,8 +39,11 @@ function resolvedTheme(theme: 'light' | 'dark' | 'system'): 'light' | 'dark' {
 
 export function TopBar() {
   const reviewerName = useReviewerName()
+  const firstName = useFirstName()
+  const lastName = useLastName()
   const { theme, setTheme, setReviewerName } = usePreferences()
   const { unreadCount } = useNotifications()
+  const submissionsCount = useSubmissionsCount()
   const navigate = useNavigate()
   const [openBell, setOpenBell] = useState(false)
   const [openCmd, setOpenCmd] = useState(false)
@@ -68,8 +72,15 @@ export function TopBar() {
     navigate('/login')
   }
 
-  const initials = (reviewerName || SENTINEL).slice(0, 2).toUpperCase()
-  const display = reviewerName === SENTINEL || !reviewerName ? 'Reviewer' : reviewerName
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
+  const display =
+    fullName ||
+    (reviewerName && reviewerName !== SENTINEL ? reviewerName : 'Reviewer')
+  const initials = (
+    firstName && lastName
+      ? `${firstName[0]}${lastName[0]}`
+      : display.slice(0, 2)
+  ).toUpperCase()
 
   return (
     <header
@@ -95,6 +106,7 @@ export function TopBar() {
       <nav style={{ display: 'flex', height: '100%', marginLeft: 16 }} aria-label="Primary">
         {NAV.map((n) => {
           const Icon = n.icon
+          const isSubmissions = n.to === '/app/submissions'
           return (
             <NavLink
               key={n.to}
@@ -107,6 +119,28 @@ export function TopBar() {
                 <Icon size={16} />
               </span>
               <span>{n.label}</span>
+              {isSubmissions && submissionsCount > 0 && (
+                <span
+                  aria-label={`${submissionsCount} permits in submissions`}
+                  className="mono tabular"
+                  style={{
+                    minWidth: 18,
+                    height: 18,
+                    padding: '0 6px',
+                    borderRadius: 9,
+                    background: 'var(--blue-500)',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                  }}
+                >
+                  {submissionsCount > 99 ? '99+' : submissionsCount}
+                </span>
+              )}
             </NavLink>
           )
         })}
@@ -269,7 +303,16 @@ export function TopBar() {
           >
             {initials}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              textAlign: 'left',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
             <span style={{ color: 'var(--ink)', fontSize: 12, fontWeight: 600 }}>{display}</span>
             <span style={{ color: 'var(--ink-3)', fontSize: 11 }}>Plan Reviewer · DBI</span>
           </div>
