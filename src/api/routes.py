@@ -34,10 +34,11 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB; matches the frontend hint
 def _parse_probs(raw) -> dict:
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
         except JSONDecodeError:
             return {}
-    return raw or {}
+        return parsed if isinstance(parsed, dict) else {}
+    return raw if isinstance(raw, dict) else {}
 
 
 router = APIRouter()
