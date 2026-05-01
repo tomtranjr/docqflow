@@ -30,6 +30,16 @@ from .pdf_storage import compute_sha256, pdf_path, save_pdf
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB; matches the frontend hint
 
+
+def _parse_probs(raw) -> dict:
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except JSONDecodeError:
+            return {}
+    return raw or {}
+
+
 router = APIRouter()
 
 _FILENAME_UNSAFE = re.compile(r'[\r\n"\\]')
@@ -110,12 +120,7 @@ async def list_history(
     result = await get_history(page, limit, label, search)
     items = []
     for item in result["items"]:
-        probs = item["probabilities"]
-        if isinstance(probs, str):
-            try:
-                probs = json.loads(probs)
-            except JSONDecodeError:
-                probs = {}
+        probs = _parse_probs(item["probabilities"])
         items.append(HistoryEntry(**{**item, "probabilities": probs}))
     return HistoryResponse(items=items, total=result["total"], page=result["page"])
 
@@ -125,12 +130,7 @@ async def get_history_entry(entry_id: int):
     result = await get_classification(entry_id)
     if not result:
         raise HTTPException(status_code=404, detail="Classification not found")
-    probs = result["probabilities"]
-    if isinstance(probs, str):
-        try:
-            probs = json.loads(probs)
-        except JSONDecodeError:
-            probs = {}
+    probs = _parse_probs(result["probabilities"])
     return HistoryEntry(**{**result, "probabilities": probs})
 
 
@@ -144,12 +144,7 @@ async def get_classification_metadata(classification_id: int):
     result = await get_classification(classification_id)
     if not result:
         raise HTTPException(status_code=404, detail="Classification not found")
-    probs = result["probabilities"]
-    if isinstance(probs, str):
-        try:
-            probs = json.loads(probs)
-        except JSONDecodeError:
-            probs = {}
+    probs = _parse_probs(result["probabilities"])
     return HistoryEntry(**{**result, "probabilities": probs})
 
 
