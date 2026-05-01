@@ -4,7 +4,7 @@ A guide to `generate_permits.py` — the one-shot script that builds training da
 
 ## Purpose
 
-This script is **not part of production**. Its only job is to produce a fixed batch of Form 3-8 PDFs that exercise the downstream validation pipeline. The classifier in `classify.py` treats every PDF in `data/permit-3-8/` as the positive class (binary: permit-3-8 vs not), so all three error tiers live side-by-side in that folder.
+This script is **not part of production**. Its only job is to produce a fixed batch of Form 3-8 PDFs that exercise the downstream validation pipeline. The classifier in `src/classifier.py` treats every PDF in `data/permit-3-8/` as the positive class (binary: permit-3-8 vs not), so all three error tiers live side-by-side in that folder.
 
 The script generates three flavors of PDFs:
 

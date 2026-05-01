@@ -51,5 +51,5 @@ https://console.cloud.google.com/artifacts/docker/docqflow/us-central1/docqflow
 ```bash
 gcloud auth configure-docker us-central1-docker.pkg.dev
 docker pull us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
-docker run -p 8000:8000 us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
+docker run -p 8080:8080 us-central1-docker.pkg.dev/docqflow/docqflow/docqflow:latest
 ```
