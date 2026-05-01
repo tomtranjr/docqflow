@@ -2,7 +2,31 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-01
+
+### Changed
+
+- Standardized API port on `8080` across all docs (README, `docs/docker-registry.md`) to match the `Dockerfile`'s `EXPOSE 8080` so local dev and Docker share a single port.
+- Fixed documentation drift left over from the April 26 `src/` refactor: README and `docs/model-training.md` now reference `src.classifier` / `src/classifier.py` (not the removed `classify.py`), and API examples use the prefixed routes `/api/health`, `/api/predict`, `/api/history`, `/api/stats`. README structure tree updated to list `.env.example` and `scripts/generate_permits.py`.
+
+### Removed
+
+- `docs/specs/2026-04-15-frontend-design.md`: stale design spec accidentally committed from a Claude Code session. Current architecture is documented in the README and the other `docs/` files.
+
+## 2026-04-27
+
+### Changed
+
+- CI: add `paths-ignore` to both `push` and `pull_request` triggers in `.github/workflows/test.yml` so the workflow does not run when the only changed paths are under `docs/`, `README.md`, or `CONTRIBUTING.md`. Saves runner minutes on doc-only changes.
+
 ## 2026-04-26
+
+### Added
+
+- `scripts/generate_permits.py`: one-shot training-data generator that builds Form 3-8 PDFs from SF Data Portal records. Produces three flavors in a single batch — `correct` (ground truth), `minor` (1–3 field-level mutations), `major` (one cross-field contradiction across semantic, numerical, temporal, or spatial axes).
+- `data/permit-3-8/labels.json`: per-PDF supervised-learning answer key written on every run, recording each mutation's field, before/after values, and `kind` tag.
+- Deterministic mutation seeding (`sha256(permit_number)`) so re-runs produce byte-identical PDFs, and a manifest (`.manifest.json`) so re-runs append new permits instead of duplicating. `--reset` wipes for a clean regeneration.
+- Design doc at `docs/permit-generation.md` covering flavors, mutation types, CLI flags, and how to use `labels.json` for pipeline evaluation.
 
 ### Changed
 

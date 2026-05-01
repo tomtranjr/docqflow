@@ -23,7 +23,7 @@ You need at least 2 PDFs per folder (4 total minimum) for the train/test split t
 ### Run training
 
 ```bash
-uv run python classify.py train --data-dir data
+uv run python -m src.classifier train --data-dir data
 ```
 
 This will:
@@ -39,7 +39,7 @@ This will:
 You can also specify a custom model output path:
 
 ```bash
-uv run python classify.py train --data-dir data --model-path models/my_model.joblib
+uv run python -m src.classifier train --data-dir data --model-path models/my_model.joblib
 ```
 
 ## Predicting
@@ -47,7 +47,7 @@ uv run python classify.py train --data-dir data --model-path models/my_model.job
 Once you have a trained model, you can classify any PDF from the command line.
 
 ```bash
-uv run python classify.py predict --pdf-path path/to/document.pdf
+uv run python -m src.classifier predict --pdf-path path/to/document.pdf
 ```
 
 This will print the predicted label and the probability for each class:
@@ -62,7 +62,7 @@ Probabilities:
 You can point to a different model file if needed:
 
 ```bash
-uv run python classify.py predict --model-path models/my_model.joblib --pdf-path document.pdf
+uv run python -m src.classifier predict --model-path models/my_model.joblib --pdf-path document.pdf
 ```
 
 ## How it works
