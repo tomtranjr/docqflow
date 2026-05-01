@@ -2,6 +2,12 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-04-27
+
+### Changed
+
+- CI: add `paths-ignore` to both `push` and `pull_request` triggers in `.github/workflows/test.yml` so the workflow does not run when the only changed paths are under `docs/`, `README.md`, or `CONTRIBUTING.md`. Saves runner minutes on doc-only changes.
+
 ## 2026-04-26
 
 ### Added
