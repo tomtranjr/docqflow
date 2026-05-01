@@ -41,10 +41,10 @@ A PDF document classifier built with TF-IDF + Logistic Regression, served via Fa
 2. Start the API server:
 
    ```bash
-   uv run uvicorn src.server:app --reload
+   uv run uvicorn src.server:app --reload --port 8080
    ```
 
-3. Open [http://localhost:8000/docs](http://localhost:8000/docs) to see the interactive API docs.
+3. Open [http://localhost:8080/docs](http://localhost:8080/docs) to see the interactive API docs.
 
 ## Running with Docker
 
@@ -71,7 +71,7 @@ To push the image to Google Artifact Registry, see [docs/docker-registry.md](doc
 Confirms the model is loaded and ready.
 
 ```bash
-curl http://localhost:8000/api/health
+curl http://localhost:8080/api/health
 ```
 
 ```json
@@ -83,7 +83,7 @@ curl http://localhost:8000/api/health
 Upload a PDF file and get a classification prediction back.
 
 ```bash
-curl -X POST http://localhost:8000/api/predict \
+curl -X POST http://localhost:8080/api/predict \
   -F "file=@your_document.pdf"
 ```
 
