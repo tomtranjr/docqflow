@@ -6,6 +6,7 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 
 ### Changed
 
+- Extracted `_parse_probs` helper in `src/api/routes.py` to deduplicate the JSON-deserialisation logic that was copy-pasted across three route handlers (`list_history`, `get_history_entry`, `get_classification_metadata`). No behaviour change.
 - Standardized API port on `8080` across all docs (README, `docs/docker-registry.md`) to match the `Dockerfile`'s `EXPOSE 8080` so local dev and Docker share a single port.
 - Fixed documentation drift left over from the April 26 `src/` refactor: README and `docs/model-training.md` now reference `src.classifier` / `src/classifier.py` (not the removed `classify.py`), and API examples use the prefixed routes `/api/health`, `/api/predict`, `/api/history`, `/api/stats`. README structure tree updated to list `.env.example` and `scripts/generate_permits.py`.
 
