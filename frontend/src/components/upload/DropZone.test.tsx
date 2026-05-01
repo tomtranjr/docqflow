@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DropZone } from './DropZone'
 import { MAX_FILE_SIZE } from '@/lib/constants'
@@ -24,13 +24,14 @@ describe('DropZone', () => {
     expect(onFiles.mock.calls[0][0]).toEqual([pdf])
   })
 
-  it('rejects a non-PDF by extension and MIME type', async () => {
+  it('rejects a non-PDF by extension and MIME type', () => {
     const onFiles = vi.fn()
     const { container } = render(<DropZone onFiles={onFiles} />)
 
     const input = container.querySelector('input[type=file]') as HTMLInputElement
     const txt = makeFile('notes.txt', 'text/plain', 1024)
-    await userEvent.upload(input, txt)
+    // Bypass the accept-attribute filter that userEvent.upload enforces
+    fireEvent.change(input, { target: { files: [txt] } })
 
     expect(onFiles).not.toHaveBeenCalled()
     expect(screen.getByText(/only pdf files accepted/i)).toBeInTheDocument()

@@ -39,12 +39,27 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 
 ### Added
 
+- Frontend overhaul (PR 1 of 4): mock-faithful Dashboard / Review / Queue / Submissions / Reports / Settings pages with `DashboardShell` (LeftRail + ProcessFlowStrip) and `WorkspaceShell`.
+- `react-pdf` (lazy-loaded) viewer with custom toolbar (page nav, zoom, download) on `/review/:id` and PDF first-page thumbnails on `/queue`.
+- `PreferencesContext` (replaces `ThemeContext`) with theme + show-confidence + reviewer-name preferences persisted to `localStorage`.
+- Backend: `documents` table + filesystem PDF storage at `data/pdfs/{sha256}.pdf` (deduplicated by SHA-256).
+- Backend: `id` and `pdf_sha256` returned from `/api/predict`, plus new `GET /api/classifications/{id}` and `GET /api/classifications/{id}/pdf` endpoints.
+- Backend: `src/api/config.py` Settings module and `src/api/migrations.py` schema_version-based migration runner.
+- Backend: 20 MB upload size cap; filename sanitization in `Content-Disposition`; SHA-256 path validation.
+- Frontend bundle-size guard (`scripts/check-bundle-size.mjs`) with 250 KB gzipped budget for the main chunk.
+- `usePlaceholderExtraction` hook produces shape-matched stub data that varies per `classificationId`; PR 3 will swap it for the real `useExtraction` against `/api/extract`.
 - GitHub Actions backend CI: uv installs, ruff lint/format check, pytest on Python 3.11 and 3.12, pinned `ubuntu-24.04` runner.
 - Pull request CI: require `CHANGELOG.md` to change when non-documentation code or config files change (README, `docs/`, and other `*.md` except `CHANGELOG.md` are exempt).
 
 ### Changed
 
+- `/api/predict` response now includes `id` and `pdf_sha256` (additive; existing fields unchanged).
+- `History` page renamed to `Submissions`; `/` now hosts the new Dashboard.
 - Dropped the frontend test job from CI (backend-only pipeline for this repo's current scope).
+
+### Removed
+
+- `Classify` page (functionality merged into Dashboard); `Header.tsx` (replaced by `TopBar`); `Shell.tsx` (replaced by the two new shells); `ThemeContext` (replaced by `PreferencesContext`).
 
 ## 2026-04-23
 
