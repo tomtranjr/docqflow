@@ -2,6 +2,17 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-01
+
+### Changed
+
+- Standardized API port on `8080` across all docs (README, `docs/docker-registry.md`) to match the `Dockerfile`'s `EXPOSE 8080` so local dev and Docker share a single port.
+- Fixed documentation drift left over from the April 26 `src/` refactor: README and `docs/model-training.md` now reference `src.classifier` / `src/classifier.py` (not the removed `classify.py`), and API examples use the prefixed routes `/api/health`, `/api/predict`, `/api/history`, `/api/stats`. README structure tree updated to list `.env.example` and `scripts/generate_permits.py`.
+
+### Removed
+
+- `docs/specs/2026-04-15-frontend-design.md`: stale design spec accidentally committed from a Claude Code session. Current architecture is documented in the README and the other `docs/` files.
+
 ## 2026-04-27
 
 ### Changed
