@@ -2,6 +2,14 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-02
+
+### Added
+
+- Supabase dev project setup: `documents` and `pipeline_runs` tables under `supabase/migrations/`, with row-level security limiting access to `auth.uid() = uploaded_by` (and the matching join policy on `pipeline_runs`).
+- `docs/setup/supabase.md`: how to install the CLI, get credentials, run migrations locally (`supabase db reset`), push to dev (`supabase db push`), and add new migrations.
+- `.env.example`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` placeholders.
+
 ## 2026-05-01
 
 ### Changed
