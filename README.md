@@ -2,6 +2,8 @@
 
 A PDF document classifier built with TF-IDF + Logistic Regression, served via FastAPI. Upload a PDF and get back a predicted document class with per-class probabilities.
 
+![DocQFlow demo](demo/docqflow-demo.gif)
+
 ## Setup
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already.
