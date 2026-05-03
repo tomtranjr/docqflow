@@ -6,6 +6,9 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 
 ### Added
 
+- GCS dev bucket setup: `docqflow-pdfs-dev` in `us-west1` with uniform bucket-level access, public access prevention, and a 30-day delete lifecycle. Service account `docqflow-api-dev` granted `roles/storage.objectAdmin` scoped to the bucket only. Workload Identity Federation pool `github-pool-dev` configured for `tomtranjr/docqflow` GitHub Actions — no static JSON keys.
+- `docs/setup/gcp.md`: project + APIs, bucket creation, lifecycle, optional CORS, service account IAM, WIF for GitHub Actions, local `gcloud auth application-default login`, and a smoke test.
+- `.env.example`: `GCP_PROJECT` and `GCS_BUCKET` placeholders.
 - Supabase dev project setup: `documents` and `pipeline_runs` tables under `supabase/migrations/`, with row-level security limiting access to `auth.uid() = uploaded_by` (and the matching join policy on `pipeline_runs`).
 - `docs/setup/supabase.md`: how to install the CLI, get credentials, run migrations locally (`supabase db reset`), push to dev (`supabase db push`), and add new migrations.
 - `.env.example`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` placeholders.
