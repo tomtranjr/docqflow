@@ -1,4 +1,5 @@
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -16,7 +17,7 @@ def main():
 
     if not key or key == "sk-..." or not key.startswith("sk-"):
         print("status:  MISSING — OPENAI_API_KEY is not set to a real key")
-        return
+        sys.exit(1)
 
     print("status:  OK — OPENAI_API_KEY present")
 

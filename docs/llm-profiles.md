@@ -19,10 +19,11 @@ Default profile for dev. Cheap, fast, good enough for extraction and summarizati
 `OPENAI_API_KEY` lives in Google Secret Manager (`openai-api-key`, project `docqflow`). Cloud Run reads it via the `docqflow-api-dev` service account. For local dev:
 
 ```bash
-echo "OPENAI_API_KEY=$(gcloud secrets versions access latest --secret=openai-api-key --project=docqflow)" >> .env
+# Check .env for existing OPENAI_API_KEY before appending to avoid duplicates
+gcloud secrets versions access latest --secret=openai-api-key --project=docqflow | sed 's/^/OPENAI_API_KEY=/' >> .env
 ```
 
-Never paste the key on the command line or commit it.
+Alternatively, use `--out-file`, Cloud Run secret injection, or tools like berglas or Chamber. Avoid typing secrets interactively if concerned about shell history. Never paste the key on the command line or commit it.
 
 ## Verifying setup
 
