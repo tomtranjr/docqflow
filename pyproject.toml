@@ -18,6 +18,7 @@ dependencies = [
     "uvicorn>=0.42.0",
     "aiosqlite>=0.20.0",
     "pydantic>=2",
+    "rapidfuzz>=3.14.5",
 ]
 
 [project.optional-dependencies]

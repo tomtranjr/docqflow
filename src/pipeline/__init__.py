@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.pipeline.gazetteer import Gazetteer
 from src.pipeline.schemas import (
     ExtractedFields,
     Issue,
@@ -15,6 +16,7 @@ from src.pipeline.schemas import (
 
 __all__ = [
     "ExtractedFields",
+    "Gazetteer",
     "Issue",
     "IssueKind",
     "LLMProfileInfo",
