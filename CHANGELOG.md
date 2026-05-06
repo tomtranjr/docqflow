@@ -2,6 +2,15 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-06
+
+### Added
+
+- LLM profile registry + LiteLLM seam (`src/pipeline/llm_profiles.py`): `Profile` dataclass, `REGISTRY` seeded with one entry (`cloud-fast` → `openai/gpt-4o-mini`), env-var-based `available_profiles()` reachability (no live ping), and async `judge(profile, system, user, schema)` that wraps `litellm.acompletion` with a JSON-schema `response_format`, a 15s timeout (`LLMTimeout`), and Pydantic validation (`LLMSchemaError`). Single chokepoint for Stage 6 reasoning calls — additional providers slot in via a registry edit.
+- `GET /llm/profiles` (`src/api/routes_pipeline.py`): returns `list[LLMProfileInfo]` so the frontend can discover configured providers and their reachability without a live LLM call. Mounted at root in `src/server.py`; lifespan startup logs reachability for each profile.
+- `tests/pipeline/test_llm_profiles.py`: 9 tests covering registry defaults, reachability toggling, schema enforcement, timeout handling, malformed/invalid JSON, and the HTTP route. All `litellm.acompletion` calls are mocked — no live LLM traffic in CI.
+- Pinned `litellm` in `pyproject.toml`.
+
 ## 2026-05-05
 
 ### Added
