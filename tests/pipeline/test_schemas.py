@@ -20,9 +20,7 @@ from src.pipeline import (
     PipelineResult,
 )
 
-LABELS_PATH = (
-    Path(__file__).resolve().parents[2] / "data" / "permit-3-8" / "labels.json"
-)
+LABELS_PATH = Path(__file__).resolve().parent / "fixtures" / "labels.json"
 
 
 def _sample_issue() -> Issue:
@@ -150,10 +148,15 @@ class TestNegativeValidation:
 
 
 class TestLabelCoverage:
-    """Hard-fail guard: every kind in labels.json must be a declared IssueKind.
+    """Hard-fail guard: every kind in the fixture must be a declared IssueKind.
 
-    If this fails, either labels.json drifted or a new mutation kind was added
-    without updating IssueKind in src/pipeline/schemas.py.
+    The fixture at tests/pipeline/fixtures/labels.json is the canonical
+    snapshot of every mutation kind the pipeline is expected to emit. If
+    someone adds a kind to the fixture without adding it to IssueKind
+    (or vice versa), this test fires.
+
+    The real labels file at data/permit-3-8/ is gitignored, so this fixture
+    is what runs in CI on a clean checkout.
     """
 
     def test_every_label_kind_is_a_declared_issue_kind(self):
@@ -165,6 +168,6 @@ class TestLabelCoverage:
                 seen.add(mutation["kind"])
         missing = seen - declared
         assert not missing, (
-            f"labels.json contains mutation kinds not declared in IssueKind: {sorted(missing)}. "
+            f"fixture labels.json contains mutation kinds not declared in IssueKind: {sorted(missing)}. "
             "Add them to src/pipeline/schemas.py::IssueKind."
         )

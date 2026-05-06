@@ -7,7 +7,8 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 ### Added
 
 - Pipeline output contract (`src/pipeline/schemas.py`): Pydantic v2 models — `Issue`, `PipelineResult`, `LLMProfileInfo` — and `Literal` aliases for `Severity`, `Verdict`, `Source`, `IssueKind` (12 mutation kinds, exhaustive over `data/permit-3-8/labels.json`). All models use `extra='forbid'` to reject unknown fields. Re-exported from `src.pipeline`. Locks the shape every downstream PIPE-* / API-1 / EVAL-1 ticket imports.
-- `tests/pipeline/test_schemas.py`: round-trip, negative-validation, and a hard-fail label-coverage guard that asserts every `mutations[].kind` in `labels.json` is declared in `IssueKind` — catches schema drift before merge.
+- `tests/pipeline/test_schemas.py`: round-trip, negative-validation, and a hard-fail label-coverage guard that asserts every `mutations[].kind` in the fixture is declared in `IssueKind` — catches schema drift before merge.
+- `tests/pipeline/fixtures/labels.json`: synthetic 12-entry fixture covering every `IssueKind`. Replaces the gitignored `data/permit-3-8/labels.json` so the coverage test runs in CI on a clean checkout.
 - Pinned `pydantic>=2` explicitly in `pyproject.toml` (was previously transitive via FastAPI).
 
 ## 2026-05-04
