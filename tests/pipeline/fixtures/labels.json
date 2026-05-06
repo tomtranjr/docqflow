@@ -1,0 +1,110 @@
+{
+  "synthetic_missing_block_lot.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "missing_block_lot", "field": "1 BLOCK & LOT", "before": "1428/017", "after": ""}
+    ],
+    "permit_number": "200000000001",
+    "permit_type": "8"
+  },
+  "synthetic_missing_description.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "missing_description", "field": "DESCRIPTION OF WORK", "before": "kitchen remodel", "after": ""}
+    ],
+    "permit_number": "200000000002",
+    "permit_type": "8"
+  },
+  "synthetic_missing_street_number.pdf": {
+    "flavor": "minor",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "missing_street_number", "field": "1 STREET ADDRESS OF JOB BLOCK  LOT", "before": "277 05th Av", "after": "05th Av"}
+    ],
+    "permit_number": "200000000003",
+    "permit_type": "8"
+  },
+  "synthetic_missing_form_checkbox.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "missing_form_checkbox", "field": "Check Box8", "before": "/Yes", "after": ""}
+    ],
+    "permit_number": "200000000004",
+    "permit_type": "8"
+  },
+  "synthetic_block_lot_format.pdf": {
+    "flavor": "minor",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "block_lot_format", "field": "1 BLOCK & LOT", "before": "6509/062", "after": "6509062"}
+    ],
+    "permit_number": "200000000005",
+    "permit_type": "8"
+  },
+  "synthetic_license_digit_drop.pdf": {
+    "flavor": "minor",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "license_digit_drop", "field": "CONTRACTOR LICENSE NUMBER", "before": "1234567", "after": "123456"}
+    ],
+    "permit_number": "200000000006",
+    "permit_type": "8"
+  },
+  "synthetic_street_suffix_swap.pdf": {
+    "flavor": "minor",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "street_suffix_swap", "field": "1 STREET ADDRESS OF JOB BLOCK  LOT", "before": "277 05th Av", "after": "277 05th St"}
+    ],
+    "permit_number": "200000000007",
+    "permit_type": "8"
+  },
+  "synthetic_address_typo.pdf": {
+    "flavor": "minor",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "address_typo", "field": "1 STREET ADDRESS OF JOB BLOCK  LOT", "before": "277 05th Av", "after": "277 05tj Av"}
+    ],
+    "permit_number": "200000000008",
+    "permit_type": "8"
+  },
+  "synthetic_date_impossibility_swap.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "date_impossibility_swap", "field": "DATE FILED", "before": "4/24/2026", "after": "4/24/2027"}
+    ],
+    "permit_number": "200000000009",
+    "permit_type": "8"
+  },
+  "synthetic_address_block_lot_mismatch.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "address_block_lot_mismatch", "field": "1 BLOCK & LOT", "before": "1428/017", "after": "9999/999"}
+    ],
+    "permit_number": "200000000010",
+    "permit_type": "8"
+  },
+  "synthetic_cost_scope_mismatch.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "cost_scope_mismatch", "field": "2A ESTIMATED COST OF JOB", "before": "$50000", "after": "$1"}
+    ],
+    "permit_number": "200000000011",
+    "permit_type": "8"
+  },
+  "synthetic_description_mismatch_bank_form_3_phrasing.pdf": {
+    "flavor": "major",
+    "mutation_count": 1,
+    "mutations": [
+      {"kind": "description_mismatch_bank_form_3_phrasing", "field": "DESCRIPTION OF WORK", "before": "kitchen remodel", "after": "structural foundation rebuild"}
+    ],
+    "permit_number": "200000000012",
+    "permit_type": "8"
+  }
+}
