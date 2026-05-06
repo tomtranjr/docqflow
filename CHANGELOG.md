@@ -2,6 +2,15 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-04
+
+### Added
+
+- LLM credential plumbing for the extraction pipeline. `OPENAI_API_KEY` lives in Google Secret Manager (`openai-api-key`, project `docqflow`); the `docqflow-api-dev` service account has `roles/secretmanager.secretAccessor` so Cloud Run can read it. Local dev hydrates `.env` via `gcloud secrets versions access`.
+- `docs/llm-profiles.md`: documents the `cloud-fast` profile (OpenAI `gpt-4o-mini`, expected latency, expected cost) and the workflow for hydrating a local key from Secret Manager.
+- `scripts/check_llm_profiles.py`: env-only smoke check that verifies `OPENAI_API_KEY` is set and looks valid. No network call — keeps CI free and avoids burning OpenAI budget.
+- `.env.example`: `LLM_DEFAULT_PROFILE`, `OPENAI_MODEL`, `OPENAI_API_KEY` placeholders.
+
 ## 2026-05-02
 
 ### Added
