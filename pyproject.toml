@@ -19,6 +19,7 @@ dependencies = [
     "aiosqlite>=0.20.0",
     "pydantic>=2",
     "rapidfuzz>=3.14.5",
+    "litellm>=1.83.0",
 ]
 
 [project.optional-dependencies]
