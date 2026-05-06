@@ -1,0 +1,107 @@
+block_lot,address,normalized_address
+0126/007,1801 Jones St #0,1801 jones st #0
+0209/010,737 Washington St,737 washington st
+0265/003,388 Market St,388 market st
+0267/015,235 Pine St,235 pine st
+0292/008,120 Kearny St,120 kearny st
+0321/008,417 Hyde St,417 hyde st
+0518/014,1918 Filbert St,1918 filbert st
+0530/012,1858 Union St,1858 union st
+0668/020,81 Frank Norris St #305,81 frank norris st #305
+0798/022,903 Fulton St,903 fulton st
+0833/003,150 Oak St,150 oak st
+0872/013,65 Hermann St,65 hermann st
+1053/019,1528 Baker St,1528 baker st
+1080/036,1409 Broderick St,1409 broderick st
+1260/011,29 Scott St,29 scott st
+1272/004,943 Cole St,943 cole st
+1427/006,213 06th Av #0,213 06th av #0
+1428/017,277 05th Av,277 05th av
+1521/039,471 23rd Av #1,471 23rd av #1
+1523/047,5717 Geary Bl,5717 geary bl
+1767/065,1397 12th Av,1397 12th av
+1787/025,1330 33rd Av,1330 33rd av
+1814/004,1427 39th Av,1427 39th av
+1880/007,1529 34th Av,1529 34th av
+1913/033,1642 31st Av,1642 31st av
+2032/005,1743 17th Av,1743 17th av
+2353/024,2318 25th Av,2318 25th av
+2379/037,2414 47th Av,2414 47th av
+2458/017,2719 Vicente St,2719 vicente st
+2482/004,2645 14th Av,2645 14th av
+2620/097,88 Museum Wy,88 museum wy
+2824/016,20 Midcrest Wy,20 midcrest wy
+2834/020,204 Dellbrook Av,204 dellbrook av
+2854/011,145 Gardenside Dr #11,145 gardenside dr #11
+3106/010,887 Faxon Av,887 faxon av
+3109/018,1560 Plymouth Av,1560 plymouth av
+3112/007,130 Hazelwood Av,130 hazelwood av
+3119/025,178 Flood Av,178 flood av
+3181/006,115 Edna St,115 edna st
+3260/021,1601 Monterey Bl,1601 monterey bl
+3267/019,393 San Benito Wy,393 san benito wy
+3534/049,232 Clinton Pk,232 clinton pk
+3541/006,8 Henry St,8 henry st
+3561/089,77 Beaver St #0,77 beaver st #0
+3583/077,4063 18th St,4063 18th st
+3590/063,315 Capp St,315 capp st
+3619/016,878 Dolores St,878 dolores st
+3619/107,12 Chattanooga St,12 chattanooga st
+3708/043,595 Market St,595 market st
+3729/059,231 09th St,231 09th st
+3735/013,680 Folsom St,680 folsom st
+3749/062,303 02nd St,303 02nd st
+3752/365,855 Folsom St #916,855 folsom st #916
+3767/059,201 Harrison St #215,201 harrison st #215
+3774/293,200 Brannan St #206,200 brannan st #206
+4085/030,835 Alabama St,835 alabama st
+4144/005,940 York St #0,940 york st #0
+4152/009,1040 Hampshire St,1040 hampshire st
+4208/009,2542 Bryant St,2542 bryant st
+4829/022,1451 Van Dyke Av,1451 van dyke av
+5215/017,1620 Davidson Av,1620 davidson av
+5215/021,1680 Davidson Av,1680 davidson av
+5215/022,1650 Davidson Av,1650 davidson av
+5501/004,1314 Shotwell St,1314 shotwell st
+5648/003,112 Anderson St,112 anderson st
+5671/025,359 Prospect Av,359 prospect av
+5814/022,773 Gates St,773 gates st
+5963/004,826 Peru Av,826 peru av
+6501/065,4724 25th St,4724 25th st
+6509/062,3841 24th St,3841 24th st
+6537/049,1193 Noe St,1193 noe st
+6552/031,167 Clipper St,167 clipper st
+6563/025,4179 26th St,4179 26th st
+6564/035,4033 26th St,4033 26th st
+6570/006,3041 Mission St,3041 mission st
+6601/023,1477 Sanchez St,1477 sanchez st
+6637/004,1676 Dolores St,1676 dolores st
+6729/010,53 Sussex St,53 sussex st
+6987/048,131 Jules Av,131 jules av
+7317/001,112 Crespi Dr,112 crespi dr
+7331/055,238 Summit Wy,238 summit wy
+7331/056,250 Summit Wy,250 summit wy
+7331/121,251 Summit Wy,251 summit wy
+7335/001,116 Juan Bautista Cr,116 juan bautista cr
+7555/010,372 Sussex St,372 sussex st
+9001/001,275 05th Av,275 05th av
+9001/002,279 05th Av,279 05th av
+9001/003,277 05th St,277 05th st
+9002/001,1395 12th Av,1395 12th av
+9002/002,1399 12th Av,1399 12th av
+9003/001,3839 24th St,3839 24th st
+9003/002,3843 24th St,3843 24th st
+9004/001,236 Summit Wy,236 summit wy
+9004/002,240 Summit Wy,240 summit wy
+9005/001,1191 Noe St,1191 noe st
+9005/002,1195 Noe St,1195 noe st
+9006/001,1620 Davidson St,1620 davidson st
+9007/001,148 Oak St,148 oak st
+9007/002,152 Oak St,152 oak st
+9008/001,150 Oak Av,150 oak av
+9009/001,4061 18th St,4061 18th st
+9009/002,4065 18th St,4065 18th st
+9010/001,313 Capp St,313 capp st
+9010/002,317 Capp St,317 capp st
+9011/001,1599 Plymouth Av,1599 plymouth av
+9012/001,114 Crespi Dr,114 crespi dr

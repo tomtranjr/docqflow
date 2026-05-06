@@ -6,6 +6,10 @@ Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI ag
 
 ### Added
 
+- SF parcel gazetteer loader (`src/pipeline/gazetteer.py`): `Gazetteer.load()` singleton with `lookup_address(block_lot)` and `closest_address(query, threshold)` (rapidfuzz). Reads from a hand-curated CSV at `data/gazetteer/sf_parcels.csv` (107 rows: 85 from `data/permit-3-8/` permits + 22 near-miss neighbors for fuzzy-match coverage). Loaded once at startup via the FastAPI lifespan and stashed on `app.state.gazetteer`. Unblocks Stage 5 address rules (`address_block_lot_mismatch`, `address_typo`, `street_suffix_swap`). Live ingestion from SF Open Data is a deferred stretch goal — loader API will not change when it lands.
+- `tests/pipeline/test_gazetteer.py` + `tests/fixtures/gazetteer_sample.csv`: covers exact lookup, block/lot normalization (`NNNNNNN` → `NNNN/NNN`), fuzzy match within threshold, threshold filtering, and singleton-vs-fresh-instance load semantics.
+- `docs/setup/gazetteer.md`: where the CSV lives, how to add rows, refresh cadence.
+- Pinned `rapidfuzz` in `pyproject.toml`.
 - Pipeline output contract (`src/pipeline/schemas.py`): Pydantic v2 models — `Issue`, `PipelineResult`, `LLMProfileInfo` — and `Literal` aliases for `Severity`, `Verdict`, `Source`, `IssueKind` (12 mutation kinds, exhaustive over `data/permit-3-8/labels.json`). All models use `extra='forbid'` to reject unknown fields. Re-exported from `src.pipeline`. Locks the shape every downstream PIPE-* / API-1 / EVAL-1 ticket imports.
 - `tests/pipeline/test_schemas.py`: round-trip, negative-validation, and a hard-fail label-coverage guard that asserts every `mutations[].kind` in the fixture is declared in `IssueKind` — catches schema drift before merge.
 - `tests/pipeline/fixtures/labels.json`: synthetic 12-entry fixture covering every `IssueKind`. Replaces the gitignored `data/permit-3-8/labels.json` so the coverage test runs in CI on a clean checkout.

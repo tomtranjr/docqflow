@@ -8,11 +8,13 @@ from src.api.config import load_settings
 from src.api.database import init_db
 from src.api.routes import router as api_router
 from src.classifier import load_model
+from src.pipeline.gazetteer import Gazetteer
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.pipeline = load_model()
+    app.state.gazetteer = Gazetteer.load()
     await init_db()
     settings = load_settings()
     os.makedirs(settings.pdf_dir, exist_ok=True)
