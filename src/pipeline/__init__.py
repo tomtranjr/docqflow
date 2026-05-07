@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.pipeline.extract import NotAnAcroForm, read_acroform
 from src.pipeline.gazetteer import Gazetteer
 from src.pipeline.schemas import (
     ExtractedFields,
@@ -20,8 +21,10 @@ __all__ = [
     "Issue",
     "IssueKind",
     "LLMProfileInfo",
+    "NotAnAcroForm",
     "PipelineResult",
     "Severity",
     "Source",
     "Verdict",
+    "read_acroform",
 ]
