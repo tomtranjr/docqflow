@@ -221,7 +221,11 @@ def rule_license_digit_drop(fields: ExtractedFields, _: Gazetteer) -> list[Issue
             value=value,
             message=(
                 f"Contractor license has {len(digits)} digits; expected 6-8 "
-                "(possible digit drop)."
+                + (
+                    "(possible digit drop)."
+                    if len(digits) < 6
+                    else "(possible extra digit)."
+                )
             ),
             source="rule",
         )
