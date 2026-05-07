@@ -32,6 +32,8 @@ LLM_KINDS = frozenset(
 
 
 def _load_labels() -> dict[str, dict]:
+    if not LABELS_PATH.exists():
+        pytest.skip(f"corpus not available at {LABELS_PATH}")
     with LABELS_PATH.open() as f:
         return json.load(f)
 

@@ -38,8 +38,10 @@ async def run_pipeline(
     """Run Stages 4-6 end-to-end and produce a `PipelineResult`.
 
     Stage 4 errors (`NotAnAcroForm`) propagate so the API layer can return 422.
-    Stage 6 errors degrade inside `run_reasoning` (timeout → Issue, schema
-    error → skipped); this function never raises on LLM failures.
+    Stage 5 errors from `run_rules` propagate as-is (treated as a 500 by the
+    API layer). Stage 6 errors degrade inside `run_reasoning` (timeout →
+    Issue, schema error → skipped); this function never raises on LLM
+    failures.
     """
     start = time.monotonic()
 
@@ -48,7 +50,7 @@ async def run_pipeline(
     llm_issues = await run_reasoning(fields, profile)
     issues = rule_issues + llm_issues
 
-    latency_ms = int((time.monotonic() - start) * 1000)
+    latency_ms = round((time.monotonic() - start) * 1000)
     return PipelineResult(
         document_id=uuid4(),
         llm_profile=profile,
