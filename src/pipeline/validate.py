@@ -39,7 +39,7 @@ DESCRIPTION_FIELDS = (
     "16D DESCRIPTION",
 )
 
-_BLOCK_LOT_RE = re.compile(r"^\d{4}/\d{3}$")
+_BLOCK_LOT_RE = re.compile(r"^\d{4}[A-Z]?/\d{3}[A-Z]?$")
 _LEADING_NUMBER_RE = re.compile(r"^\d+\b")
 # CA CSLB license numbers are typically 6-8 digits.
 _LICENSE_OK_LEN = range(6, 9)
