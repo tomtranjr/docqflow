@@ -14,6 +14,7 @@ from src.pipeline.schemas import (
     Source,
     Verdict,
 )
+from src.pipeline.validate import RULES, run_rules
 
 __all__ = [
     "ExtractedFields",
@@ -23,8 +24,10 @@ __all__ = [
     "LLMProfileInfo",
     "NotAnAcroForm",
     "PipelineResult",
+    "RULES",
     "Severity",
     "Source",
     "Verdict",
     "read_acroform",
+    "run_rules",
 ]
