@@ -2,6 +2,13 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-07
+
+### Added
+
+- Stage 6 LLM reasoning (`src/pipeline/reason.py`): two LLM-judged rules — `judge_cost_scope` (kind `cost_scope_mismatch`, judges `'2A ESTIMATED COST OF JOB'` against `'7A PRESENT USE'` and the description fields) and `judge_description` (kind `description_mismatch_bank_form_3_phrasing`, judges the description against the Form 3 / Form 8 selection encoded by `Check Box8` / `Check Box9`). Both call `judge()` from `llm_profiles` with a `JudgeResponse` Pydantic schema (`verdict ∈ {ok, flag}`, `confidence ∈ [0,1]`, `message`). Results below a configurable confidence threshold (default `0.6`) are suppressed. `run_reasoning(fields, profile)` runs both concurrently via `asyncio.gather(return_exceptions=True)` and never raises into the orchestrator: on `LLMTimeout` it emits an `Issue(source='llm', severity='major', confidence=None, message='LLM timeout — manual review required')` so the verdict rollup can route the document to manual review; `LLMSchemaError` and unexpected exceptions are logged and skipped. Re-exported from `src.pipeline`.
+- `tests/pipeline/test_reason.py`: 17 tests with `judge()` mocked at the boundary — no live LLM traffic. Covers clean / flagged / low-confidence-suppressed / timeout / schema-error paths for each judge, threshold override, prompt-content assertions (cost prompt includes cost + present-use + description; description prompt reflects which form is selected), and `run_reasoning` aggregation including the never-raises invariant when an unexpected exception is raised inside a judge.
+
 ## 2026-05-06
 
 ### Added
