@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="DocQFlow", lifespan=lifespan)
 app.include_router(api_router, prefix="/api")
-app.include_router(pipeline_router)
+app.include_router(pipeline_router, prefix="/api")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 dist_dir = os.path.join(REPO_ROOT, "frontend", "dist")
