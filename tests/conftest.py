@@ -54,9 +54,11 @@ def client(test_db_path, trained_pipeline):
 
     from src import server
     from src.api.database import init_db
+    from src.pipeline.gazetteer import Gazetteer
 
     asyncio.run(init_db())
     server.app.state.pipeline = trained_pipeline
+    server.app.state.gazetteer = Gazetteer.load()
     test_client = TestClient(server.app)
     try:
         yield test_client

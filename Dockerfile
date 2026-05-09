@@ -15,6 +15,7 @@ COPY pyproject.toml ./
 RUN pip install --no-cache-dir .
 COPY src/ src/
 COPY models/ models/
+COPY data/gazetteer data/gazetteer
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN chown -R appuser:appuser /app
 USER appuser

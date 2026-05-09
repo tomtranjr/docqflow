@@ -134,10 +134,10 @@ async def test_judge_raises_schema_error_when_fields_missing(monkeypatch):
 def test_get_llm_profiles_route(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     app = FastAPI()
-    app.include_router(pipeline_router)
+    app.include_router(pipeline_router, prefix="/api")
     client = TestClient(app)
 
-    response = client.get("/llm/profiles")
+    response = client.get("/api/llm/profiles")
 
     assert response.status_code == 200
     payload = response.json()
