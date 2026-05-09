@@ -13,12 +13,22 @@ from src.classifier import load_model
 from src.pipeline.gazetteer import Gazetteer
 from src.pipeline.llm_profiles import available_profiles
 
+# Surface INFO-level app logs through Cloud Run / docker logs. Uvicorn's default
+# log_config only configures the `uvicorn*` loggers, so app loggers (including
+# `Gazetteer._build`'s "loaded N gazetteer rows" message) stay silent without this.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+    force=True,
+)
+
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.pipeline = load_model()
+    logger.info("classifier loaded")
     app.state.gazetteer = Gazetteer.load()
     await init_db()
     settings = load_settings()
