@@ -15,18 +15,16 @@ on:
       - "CONTRIBUTING.md"
 
 jobs:
-  lint-and-test:
+  changelog:
+    name: Changelog gate
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Require changelog for code changes
-        if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -70,6 +68,37 @@ jobs:
           echo "::error::Code or config files changed but CHANGELOG.md was not updated. Add a brief entry under the appropriate date in CHANGELOG.md."
           exit 1
 
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff check
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -79,18 +108,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      - name: Lint
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
-
-      - name: Test
+      - name: Pytest
         run: uv run pytest -v
 
 
   # infrastructure not set up yet, leave setup here for now
   # docker-push:
-  #   needs: lint-and-test
+  #   needs: [lint, test]
   #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
   #   runs-on: ubuntu-24.04
   #   permissions:
