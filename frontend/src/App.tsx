@@ -17,6 +17,7 @@ import { Reports } from '@/pages/Reports'
 import { Settings } from '@/pages/Settings'
 import { Notifications } from '@/pages/Notifications'
 import { About } from '@/pages/About'
+import { Process } from '@/pages/Process'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'settings', element: <Settings /> },
       { path: 'notifications', element: <Notifications /> },
       { path: 'about', element: <About /> },
+      { path: 'process', element: <Process /> },
     ],
   },
 ])
