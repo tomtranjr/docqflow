@@ -25,12 +25,12 @@ import { usePreferences } from '@/context/PreferencesContext'
 import { usePlaceholderExtraction } from '@/hooks/usePlaceholderExtraction'
 import { classificationPdfUrl, getClassification, getDocument } from '@/lib/api'
 import { permitDepartment, PERMITS, type Permit, type PermitField } from '@/lib/permitData'
+import { fieldsFromPipeline } from '@/lib/pipelineFields'
 import type {
   ExtractedField,
   ExtractionState,
   FieldName,
   HistoryEntry,
-  PipelineExtractedFields,
   PipelineResult,
 } from '@/lib/types'
 
@@ -43,43 +43,6 @@ function fieldsFromExtraction(state: ExtractionState): Record<string, PermitFiel
   const out: Record<string, PermitField> = {}
   for (const [k, v] of Object.entries(state.result.fields) as [FieldName, ExtractedField][]) {
     out[k] = { v: v.value, c: v.value ? 0.92 : 0 }
-  }
-  return out
-}
-
-// Map raw 87-AcroForm field names → friendly UI labels for the cards in
-// FieldsPanel. Anything not in this map shows up under its raw key (which
-// preserves all real data while keeping the curated rows readable). Mapping
-// derived from the Form 3/8 AcroForm template — keys are the exact field
-// names returned by `pypdf.PdfReader.get_fields()` (spaces and known typos
-// preserved per the pipeline-epic-agent-context memory).
-const PIPELINE_FIELD_LABELS: Record<string, string> = {
-  '1 STREET ADDRESS OF JOB': 'Street Address',
-  'BLOCK & LOT': 'Block / Lot',
-  '2A ESTIMATED COST OF JOB': 'Estimated Cost',
-  '2B REVISED COST': 'Revised Cost',
-  '14 CONTRACTOR': 'Contractor',
-  'CALIF. LIC. NO.': 'License Number',
-  'DATE FILED': 'Date Filed',
-  ISSUED: 'Date Issued',
-  'APPLICATION NUMBER': 'Application Number',
-  '7A PRESENT USE': 'Present Use',
-  '7 PROPOSED USE': 'Proposed Use',
-  '8A 0CCUP CLASS': 'Occupancy Class',
-  '15 OWNER - LESSEE': 'Owner / Lessee',
-  '16 DESCRIPTION': 'Description',
-}
-
-function fieldsFromPipeline(extracted: PipelineExtractedFields): Record<string, PermitField> {
-  // AcroForm extraction is deterministic — confidence is 1.0 for every present
-  // field. Empty / null / `false` (explicitly-off checkboxes) are skipped to
-  // match the existing "missing" semantics of the FieldsPanel.
-  const out: Record<string, PermitField> = {}
-  for (const [k, raw] of Object.entries(extracted)) {
-    if (raw === null || raw === '' || raw === false) continue
-    const label = PIPELINE_FIELD_LABELS[k] ?? k
-    const value = typeof raw === 'boolean' ? (raw ? 'Yes' : 'No') : String(raw)
-    out[label] = { v: value, c: 1.0 }
   }
   return out
 }
@@ -172,7 +135,7 @@ export function Review() {
   }, [isLive, liveEntry, id, fallbackPermit])
 
   const fields = pipelineResult
-    ? fieldsFromPipeline(pipelineResult.extracted_fields)
+    ? fieldsFromPipeline(pipelineResult.extracted_fields, liveEntry?.label)
     : isLive
       ? fieldsFromExtraction(extraction)
       : (permit.fields ?? {})
