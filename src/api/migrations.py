@@ -40,6 +40,29 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
             "CREATE INDEX IF NOT EXISTS idx_classifications_sha256 ON classifications(pdf_sha256)",
         ],
     ),
+    (
+        3,
+        [
+            # Pipeline-run output keyed by document sha256. Re-running the same PDF
+            # replaces the prior row (UPSERT in pipeline_runs.upsert_pipeline_run);
+            # acceptable because Stages 4-5 are deterministic for a given PDF and
+            # Stage 6 (LLM judges) overwrites into the latest snapshot per design.
+            """
+            CREATE TABLE IF NOT EXISTS pipeline_runs (
+                sha256                TEXT PRIMARY KEY,
+                document_id           TEXT NOT NULL,
+                llm_profile           TEXT NOT NULL,
+                verdict               TEXT NOT NULL,
+                extracted_fields_json TEXT NOT NULL,
+                issues_json           TEXT NOT NULL,
+                latency_ms            INTEGER NOT NULL,
+                created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sha256) REFERENCES documents(sha256)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_pipeline_runs_created_at ON pipeline_runs(created_at)",
+        ],
+    ),
 ]
 
 

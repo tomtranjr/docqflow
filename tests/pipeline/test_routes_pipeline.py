@@ -182,3 +182,65 @@ def test_process_does_not_persist_on_rejection(
 
     if pdf_dir.exists():
         assert not list(pdf_dir.glob("*.pdf")), "PDFs leaked despite 422 reject"
+
+
+def test_process_persists_pipeline_run_and_returns_sha256(
+    client, corpus_pdf_bytes, mocked_judge, reachable_profile
+) -> None:
+    """POST returns sha256 in the response and persists a pipeline_runs row.
+
+    The sha256 round-trips through GET /api/documents/{sha256} so the frontend
+    can render the real extracted_fields on /app/review/:id without re-uploading.
+    """
+    import asyncio
+
+    from src.api.pdf_storage import compute_sha256
+    from src.api.pipeline_runs import get_pipeline_run
+
+    response = client.post(
+        "/api/documents/process",
+        files={"file": ("permit.pdf", corpus_pdf_bytes, "application/pdf")},
+        data={"profile": "cloud-fast"},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    expected_sha = compute_sha256(corpus_pdf_bytes)
+    assert body["sha256"] == expected_sha
+
+    persisted = asyncio.run(get_pipeline_run(expected_sha))
+    assert persisted is not None
+    assert persisted["verdict"] == body["verdict"]
+    assert persisted["llm_profile"] == body["llm_profile"]
+    assert persisted["latency_ms"] == body["latency_ms"]
+    assert persisted["extracted_fields"] == body["extracted_fields"]
+    assert len(persisted["issues"]) == len(body["issues"])
+
+
+def test_get_document_happy_path(
+    client, corpus_pdf_bytes, mocked_judge, reachable_profile
+) -> None:
+    """After a successful POST, GET /api/documents/{sha} returns the same payload."""
+    post = client.post(
+        "/api/documents/process",
+        files={"file": ("permit.pdf", corpus_pdf_bytes, "application/pdf")},
+        data={"profile": "cloud-fast"},
+    )
+    assert post.status_code == 200, post.text
+    sha = post.json()["sha256"]
+
+    response = client.get(f"/api/documents/{sha}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["sha256"] == sha
+    assert body["verdict"] == post.json()["verdict"]
+    assert body["extracted_fields"] == post.json()["extracted_fields"]
+    assert body["llm_profile"] == "cloud-fast"
+
+
+def test_get_document_404_when_no_pipeline_run(client) -> None:
+    """A sha256 that was never run through the pipeline returns 404."""
+    bogus_sha = "0" * 64
+    response = client.get(f"/api/documents/{bogus_sha}")
+    assert response.status_code == 404, response.text
+    assert "pipeline run" in response.json()["detail"].lower()

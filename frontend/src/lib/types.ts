@@ -143,6 +143,7 @@ export interface Issue {
 
 export interface PipelineResult {
   document_id: string
+  sha256?: string | null
   llm_profile: string
   verdict: Verdict
   extracted_fields: PipelineExtractedFields

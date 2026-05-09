@@ -11,6 +11,7 @@ from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 
 from src.api.documents import upsert_document
 from src.api.pdf_storage import compute_sha256, save_pdf
+from src.api.pipeline_runs import get_pipeline_run, upsert_pipeline_run
 from src.pipeline.extract import NotAnAcroForm
 from src.pipeline.llm_profiles import REGISTRY, _is_reachable, available_profiles
 from src.pipeline.orchestrator import run_pipeline
@@ -80,5 +81,22 @@ async def process_document(
     sha = compute_sha256(pdf_bytes)
     save_pdf(pdf_bytes, sha)
     await upsert_document(sha, len(pdf_bytes))
+    result = result.model_copy(update={"sha256": sha})
+    await upsert_pipeline_run(sha, result)
 
     return result
+
+
+@router.get("/documents/{sha256}", response_model=PipelineResult)
+async def get_pipeline_run_by_sha(sha256: str) -> PipelineResult:
+    """Return the latest persisted PipelineResult for a document, keyed by sha256.
+
+    Frontend Review.tsx fetches this after upload to render the real Stages 4-6
+    output (verdict + extracted_fields + issues) instead of the synthetic
+    placeholder. 404 if the document has never been processed through the
+    pipeline endpoint (legacy classify-only uploads, or unknown sha).
+    """
+    row = await get_pipeline_run(sha256)
+    if row is None:
+        raise HTTPException(status_code=404, detail="No pipeline run for this document")
+    return PipelineResult.model_validate(row)

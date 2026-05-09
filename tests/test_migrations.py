@@ -66,4 +66,25 @@ async def test_apply_migrations_advances_from_partial_state(fresh_db):
     await fresh_db.commit()
     await apply_migrations(fresh_db)
     cur = await fresh_db.execute("SELECT MAX(v) FROM schema_version")
-    assert (await cur.fetchone())[0] == 2
+    assert (await cur.fetchone())[0] == len(MIGRATIONS)
+
+
+async def test_apply_migrations_applies_v3_pipeline_runs(fresh_db):
+    await apply_migrations(fresh_db)
+    cur = await fresh_db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='pipeline_runs'"
+    )
+    assert (await cur.fetchone()) is not None
+    cur = await fresh_db.execute("PRAGMA table_info(pipeline_runs)")
+    cols = [row[1] for row in await cur.fetchall()]
+    for expected in (
+        "sha256",
+        "document_id",
+        "llm_profile",
+        "verdict",
+        "extracted_fields_json",
+        "issues_json",
+        "latency_ms",
+        "created_at",
+    ):
+        assert expected in cols, f"pipeline_runs missing column {expected}"
