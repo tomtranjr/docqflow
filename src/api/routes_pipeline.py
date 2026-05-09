@@ -56,10 +56,6 @@ async def process_document(
     if not pdf_bytes:
         raise HTTPException(status_code=422, detail="Empty file")
 
-    sha = compute_sha256(pdf_bytes)
-    save_pdf(pdf_bytes, sha)
-    await upsert_document(sha, len(pdf_bytes))
-
     gazetteer = getattr(request.app.state, "gazetteer", None)
     if gazetteer is None:
         raise HTTPException(
@@ -67,7 +63,7 @@ async def process_document(
         )
 
     try:
-        return await run_pipeline(pdf_bytes, profile, gazetteer=gazetteer)
+        result = await run_pipeline(pdf_bytes, profile, gazetteer=gazetteer)
     except NotAnAcroForm as exc:
         raise HTTPException(
             status_code=422,
@@ -78,3 +74,11 @@ async def process_document(
             status_code=422,
             detail="File is not a readable PDF",
         ) from exc
+
+    # Pipeline succeeded — only now is it safe to persist the PDF and metadata
+    # so 422 / 503 reject paths don't leave orphan files or documents rows.
+    sha = compute_sha256(pdf_bytes)
+    save_pdf(pdf_bytes, sha)
+    await upsert_document(sha, len(pdf_bytes))
+
+    return result

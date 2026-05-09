@@ -128,3 +128,57 @@ def test_process_rejects_oversize(client, mocked_judge, reachable_profile) -> No
         data={"profile": "cloud-fast"},
     )
     assert response.status_code == 413, response.text
+
+
+def test_process_does_not_persist_on_rejection(
+    client,
+    sample_pdf_bytes,
+    not_a_pdf_bytes,
+    mocked_judge,
+    reachable_profile,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """422 reject paths must not leave FS artifacts or documents rows behind.
+
+    Regression test for the persistence-ordering bug: persistence used to run
+    before pipeline validation, so 422 (NotAnAcroForm / non-PDF) and 503
+    (gazetteer not loaded) requests would still create stored PDFs and
+    metadata rows. The fix moves persistence after `run_pipeline` succeeds.
+    """
+    import asyncio
+
+    from src.api.config import Settings
+    from src.api.documents import get_document
+    from src.api.pdf_storage import compute_sha256
+
+    pdf_dir = tmp_path / "pdfs"
+    monkeypatch.setattr(
+        "src.api.pdf_storage.load_settings",
+        lambda: Settings(
+            db_path="ignored",
+            pdf_dir=str(pdf_dir),
+            llm_base_url="",
+            llm_api_key="",
+            llm_model="",
+            llm_timeout_seconds=30,
+            extraction_prompt_version=1,
+        ),
+    )
+
+    for filename, body in [
+        ("flat.pdf", sample_pdf_bytes),
+        ("notes.txt", not_a_pdf_bytes),
+    ]:
+        response = client.post(
+            "/api/documents/process",
+            files={"file": (filename, body, "application/pdf")},
+            data={"profile": "cloud-fast"},
+        )
+        assert response.status_code == 422, (filename, response.text)
+        assert asyncio.run(get_document(compute_sha256(body))) is None, (
+            f"{filename}: documents row leaked despite 422 reject"
+        )
+
+    if pdf_dir.exists():
+        assert not list(pdf_dir.glob("*.pdf")), "PDFs leaked despite 422 reject"
