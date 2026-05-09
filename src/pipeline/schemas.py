@@ -45,6 +45,7 @@ class PipelineResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     document_id: UUID
+    sha256: str | None = None
     llm_profile: str
     verdict: Verdict
     extracted_fields: ExtractedFields

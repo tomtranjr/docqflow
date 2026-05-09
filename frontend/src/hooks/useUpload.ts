@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useUploadContext } from '@/context/UploadContext'
 import { useNotifications } from '@/context/NotificationsContext'
-import { classifyPDF, getClassificationFields } from '@/lib/api'
+import { classifyPDF, getClassificationFields, processPDF } from '@/lib/api'
 import { buildFailNotification, buildPassNotification } from '@/lib/notifications'
 import { MAX_CONCURRENT_UPLOADS } from '@/lib/constants'
 import type { PredictionResponse, QueuedResult } from '@/lib/types'
@@ -87,9 +87,21 @@ export function useUpload() {
       if (files.length === 1) {
         const file = files[0]
         try {
-          const result = await classifyPDF(file)
-          await notifyFromCheck(result, file.name)
-          navigate(`/app/review/${result.id}`)
+          // Run classify (Stage 1-3, drives the routing label / department) and
+          // process (Stages 4-6, persists real extracted_fields + verdict +
+          // issues for Review.tsx to fetch by sha256) in parallel. processPDF
+          // failures (e.g. 422 NotAnAcroForm for non-permits, missing OPENAI key)
+          // must not block classify — Review.tsx falls back to the placeholder
+          // when no pipeline_run exists for the document.
+          const [classifyResult] = await Promise.all([
+            classifyPDF(file),
+            processPDF(file, 'cloud-fast').catch((err) => {
+              console.warn('processPDF failed; review will use placeholder fields', err)
+              return null
+            }),
+          ])
+          await notifyFromCheck(classifyResult, file.name)
+          navigate(`/app/review/${classifyResult.id}`)
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Upload failed'
           toast.error(`Upload failed: ${message}`)

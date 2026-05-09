@@ -23,9 +23,16 @@ import { PdfMockPreview } from '@/components/review/PdfMockPreview'
 import { RailBtn } from '@/components/review/RailBtn'
 import { usePreferences } from '@/context/PreferencesContext'
 import { usePlaceholderExtraction } from '@/hooks/usePlaceholderExtraction'
-import { classificationPdfUrl, getClassification } from '@/lib/api'
+import { classificationPdfUrl, getClassification, getDocument } from '@/lib/api'
 import { permitDepartment, PERMITS, type Permit, type PermitField } from '@/lib/permitData'
-import type { ExtractedField, ExtractionState, FieldName, HistoryEntry } from '@/lib/types'
+import { fieldsFromPipeline } from '@/lib/pipelineFields'
+import type {
+  ExtractedField,
+  ExtractionState,
+  FieldName,
+  HistoryEntry,
+  PipelineResult,
+} from '@/lib/types'
 
 const PdfViewer = lazy(() => import('@/components/pdf/PdfViewer'))
 
@@ -77,6 +84,7 @@ export function Review() {
   const fallbackPermit = useMemo(() => PERMITS.find((p) => p.id === id) ?? PERMITS[0], [id])
 
   const [liveEntry, setLiveEntry] = useState<HistoryEntry | null>(null)
+  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeField, setActiveField] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('fields')
@@ -100,12 +108,37 @@ export function Review() {
     }
   }, [isLive, numericId])
 
+  // Fetch the real Stages 4-6 pipeline result keyed by the document's sha256
+  // once the classification has loaded. Returns null on 404 (legacy entries
+  // uploaded before the pipeline endpoint was wired into useUpload), in which
+  // case we fall back to the synthetic placeholder so the UI doesn't break.
+  useEffect(() => {
+    const sha = liveEntry?.pdf_sha256
+    if (!sha) return
+    let cancelled = false
+    getDocument(sha)
+      .then((res) => {
+        if (!cancelled) setPipelineResult(res)
+      })
+      .catch(() => {
+        // Network / 5xx — keep the placeholder fallback rather than show an error
+        // banner; the classification view is still useful on its own.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [liveEntry?.pdf_sha256])
+
   const permit = useMemo<Permit>(() => {
     if (isLive && liveEntry) return entryToPermit(liveEntry, id ?? '')
     return fallbackPermit
   }, [isLive, liveEntry, id, fallbackPermit])
 
-  const fields = isLive ? fieldsFromExtraction(extraction) : (permit.fields ?? {})
+  const fields = pipelineResult
+    ? fieldsFromPipeline(pipelineResult.extracted_fields, liveEntry?.label)
+    : isLive
+      ? fieldsFromExtraction(extraction)
+      : (permit.fields ?? {})
   const headerConfPct = Math.round(permit.confidence * 100)
 
   return (

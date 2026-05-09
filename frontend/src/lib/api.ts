@@ -32,6 +32,21 @@ export async function processPDF(file: File, profile: string): Promise<PipelineR
   return fetchJSON<PipelineResult>(`${BASE}/documents/process`, { method: 'POST', body: form })
 }
 
+/**
+ * Fetch the latest persisted PipelineResult for a document by sha256.
+ * Returns null on 404 so Review.tsx can fall back to the placeholder
+ * fixture without try/catch noise. Other errors propagate normally.
+ */
+export async function getDocument(sha256: string): Promise<PipelineResult | null> {
+  const res = await fetch(`${BASE}/documents/${sha256}`)
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(body.detail || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function getLLMProfiles(): Promise<LLMProfileInfo[]> {
   return fetchJSON<LLMProfileInfo[]>(`${BASE}/llm/profiles`)
 }
