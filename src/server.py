@@ -3,6 +3,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.api.config import load_settings
@@ -27,11 +28,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings = load_settings()
     app.state.pipeline = load_model()
     logger.info("classifier loaded")
     app.state.gazetteer = Gazetteer.load()
     await init_db()
-    settings = load_settings()
     os.makedirs(settings.pdf_dir, exist_ok=True)
     for info in available_profiles():
         logger.info(
@@ -41,10 +42,59 @@ async def lifespan(app: FastAPI):
             info.model,
             info.reachable,
         )
-    yield
+
+    # Pipeline prod-swap (docqflow-2qr.2): init Postgres pool + GCS client.
+    # Both are best-effort during startup so the legacy classifier endpoints
+    # still come up if Postgres / GCS are misconfigured locally — pipeline
+    # routes will surface the misconfiguration via 5xx instead of refusing
+    # to boot.
+    if settings.database_url:
+        from src.api.postgres import init_pool
+
+        try:
+            await init_pool()
+            logger.info("postgres pool initialized")
+        except Exception:
+            logger.exception("failed to init postgres pool")
+    else:
+        logger.warning("DATABASE_URL not set — pipeline persistence disabled")
+
+    if settings.gcs_bucket:
+        from src.api.gcs_storage import init_client
+
+        try:
+            init_client()
+        except Exception:
+            logger.exception("failed to init gcs client")
+    else:
+        logger.warning("GCS_BUCKET not set — pipeline upload disabled")
+
+    try:
+        yield
+    finally:
+        if settings.database_url:
+            from src.api.postgres import close_pool
+
+            try:
+                await close_pool()
+            except Exception:
+                logger.exception("failed to close postgres pool")
 
 
 app = FastAPI(title="DocQFlow", lifespan=lifespan)
+
+# CORS for the separate Vercel frontend origin. Same-origin static-served
+# frontend (mounted below) doesn't need this, but cross-origin browser
+# clients (Vercel preview / prod, local Vite dev server) do.
+_settings = load_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(_settings.cors_allowed_origins),
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
 app.include_router(api_router, prefix="/api")
 app.include_router(pipeline_router, prefix="/api")
 
