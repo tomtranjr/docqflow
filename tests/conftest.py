@@ -85,6 +85,50 @@ def sample_pdf_bytes() -> bytes:
     )
 
 
+def _make_form_3_8_widget_pdf(field_values: dict[str, str]) -> bytes:
+    """Build a one-page PDF whose AcroForm widgets are named per Form 3-8.
+
+    Widget names mirror the lookup keys in ``src/api/pdf_fields.py``, so a
+    round-trip through ``extract_form_3_8_fields`` returns exactly
+    ``field_values``. The page itself stays blank — the extractor reads
+    widget metadata, not rendered text.
+    """
+    doc = fitz.open()
+    page = doc.new_page()
+    y = 72
+    for name, value in field_values.items():
+        widget = fitz.Widget()
+        widget.field_name = name
+        widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+        widget.field_value = value
+        widget.rect = fitz.Rect(72, y, 360, y + 16)
+        page.add_widget(widget)
+        y += 24
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+@pytest.fixture
+def filled_form_3_8_pdf_bytes() -> bytes:
+    """A synthetic Form 3-8 with every required completeness field populated.
+
+    Replaces a corpus fixture that lived in the gitignored ``data/`` tree.
+    Values match the assertions in
+    ``test_get_classification_fields_returns_nested_completeness``.
+    """
+    return _make_form_3_8_widget_pdf(
+        {
+            "APPLICATION NUMBER": "202604089128",
+            "1 STREET ADDRESS OF JOB BLOCK  LOT": "2130 Harrison St #9",
+            "1 BLOCK & LOT": "3573/056",
+            "2A ESTIMATED COST OF JOB": "$29,100",
+            "14 CONTRACTOR": "MINT CONSTRUCTION INC",
+            "14C CSLB": "1143205",
+        }
+    )
+
+
 @pytest.fixture
 def blank_pdf_bytes() -> bytes:
     """A valid PDF whose page has no extractable text."""

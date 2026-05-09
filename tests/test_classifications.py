@@ -6,7 +6,6 @@ import asyncio
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data"
-FORM_3_8_FILLED = DATA / "permit-3-8" / "permit_202604089128.pdf"
 
 
 def test_get_classification_metadata(client, sample_pdf_bytes):
@@ -89,12 +88,25 @@ def test_get_classification_404(client):
     assert r2.status_code == 404
 
 
-def test_get_classification_fields_returns_nested_completeness(client):
-    """A real filled Form 3-8 round-trips into AcroForm extraction + completeness."""
-    pdf_bytes = FORM_3_8_FILLED.read_bytes()
+def test_get_classification_fields_returns_nested_completeness(
+    client, filled_form_3_8_pdf_bytes
+):
+    """A filled Form 3-8 round-trips into AcroForm extraction + completeness.
+
+    Uses a synthetic in-memory PDF whose AcroForm widget names match the
+    production extractor in ``src/api/pdf_fields.py``. The corpus PDF this
+    test originally referenced lived under the gitignored ``data/`` tree,
+    so the test failed locally on any clone without that fixture.
+    """
     r = client.post(
         "/api/predict",
-        files={"file": (FORM_3_8_FILLED.name, pdf_bytes, "application/pdf")},
+        files={
+            "file": (
+                "permit_202604089128.pdf",
+                filled_form_3_8_pdf_bytes,
+                "application/pdf",
+            )
+        },
     )
     assert r.status_code == 200, r.text
     cid = r.json()["id"]

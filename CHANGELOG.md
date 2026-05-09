@@ -2,6 +2,12 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-09
+
+### Fixed
+
+- `tests/test_classifications.py::test_get_classification_fields_returns_nested_completeness`: replaced a `FORM_3_8_FILLED = data/permit-3-8/permit_202604089128.pdf` corpus reference with a synthetic in-memory fixture (`filled_form_3_8_pdf_bytes` in `tests/conftest.py`). The corpus PDF lived in the gitignored `data/` tree and was not present on a clean clone, so the test failed locally with `FileNotFoundError`. The new `_make_form_3_8_widget_pdf()` helper builds a one-page PDF whose AcroForm widget names mirror `_FIELD_MAP` in `src/api/pdf_fields.py`, so a round-trip through `extract_form_3_8_fields` returns exactly the values the test asserts (`application_number`, `project_address`, `parcel_number`, `estimated_cost`, `contractor_name`, `license_number`) and `evaluate_completeness` returns `passed=True, missing=[]`. CI itself stayed green only because the unrelated `trained_pipeline` fixture skips when `models/model.joblib` is absent — the failure surfaced for any developer running locally with a trained model.
+
 ## 2026-05-08
 
 ### Added
