@@ -2,6 +2,8 @@ import type {
   ExtractedFieldsResponse,
   HistoryEntry,
   HistoryResponse,
+  LLMProfileInfo,
+  PipelineResult,
   PredictionResponse,
   StatsResponse,
 } from './types'
@@ -21,6 +23,17 @@ export async function classifyPDF(file: File): Promise<PredictionResponse> {
   const form = new FormData()
   form.append('file', file)
   return fetchJSON<PredictionResponse>(`${BASE}/predict`, { method: 'POST', body: form })
+}
+
+export async function processPDF(file: File, profile: string): Promise<PipelineResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('profile', profile)
+  return fetchJSON<PipelineResult>(`${BASE}/documents/process`, { method: 'POST', body: form })
+}
+
+export async function getLLMProfiles(): Promise<LLMProfileInfo[]> {
+  return fetchJSON<LLMProfileInfo[]>(`${BASE}/llm/profiles`)
 }
 
 export async function getHistory(

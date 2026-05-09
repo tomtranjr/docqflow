@@ -109,3 +109,50 @@ export interface ExtractedFieldsResponse {
   fields: ExtractedFields
   completeness: Completeness
 }
+
+// Pipeline (Stages 4-6) — mirrors src/pipeline/schemas.py.
+export type Severity = 'minor' | 'major'
+export type Verdict = 'clean' | 'minor' | 'major'
+export type IssueSource = 'rule' | 'llm'
+
+export type IssueKind =
+  | 'missing_block_lot'
+  | 'missing_description'
+  | 'missing_street_number'
+  | 'missing_form_checkbox'
+  | 'block_lot_format'
+  | 'license_digit_drop'
+  | 'street_suffix_swap'
+  | 'address_typo'
+  | 'date_impossibility_swap'
+  | 'address_block_lot_mismatch'
+  | 'cost_scope_mismatch'
+  | 'description_mismatch_bank_form_3_phrasing'
+
+export type PipelineExtractedFields = Record<string, string | boolean | null>
+
+export interface Issue {
+  kind: IssueKind
+  severity: Severity
+  field: string
+  value: string | null
+  message: string
+  source: IssueSource
+  confidence: number | null
+}
+
+export interface PipelineResult {
+  document_id: string
+  llm_profile: string
+  verdict: Verdict
+  extracted_fields: PipelineExtractedFields
+  issues: Issue[]
+  latency_ms: number
+}
+
+export interface LLMProfileInfo {
+  name: string
+  provider: string
+  model: string
+  reachable: boolean
+}
