@@ -12,6 +12,8 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from google.api_core.exceptions import PreconditionFailed
+
 from src.api.config import load_settings
 
 if TYPE_CHECKING:
@@ -83,6 +85,10 @@ def upload_pdf_if_absent(sha256: str, data: bytes) -> str:
     callers can persist a stable path regardless of whether this upload was a
     no-op. Raises if the GCS client isn't initialized — callers should rely on
     app lifespan.
+
+    Race-safe via ``if_generation_match=0``: GCS rejects the upload with 412 if
+    a live version of the blob already exists, which we catch and treat as a
+    no-op. Avoids the TOCTOU window of a separate ``blob.exists()`` check.
     """
     _validate_sha256(sha256)
     if not data:
@@ -92,9 +98,11 @@ def upload_pdf_if_absent(sha256: str, data: bytes) -> str:
     client = get_client()
     bucket = client.bucket(settings.gcs_bucket)
     blob = bucket.blob(f"originals/{sha256}.pdf")
-    if not blob.exists(client=client):
-        blob.upload_from_string(data, content_type="application/pdf")
+    try:
+        blob.upload_from_string(
+            data, content_type="application/pdf", if_generation_match=0
+        )
         log.info("uploaded pdf to gcs sha=%s size=%d", sha256, len(data))
-    else:
+    except PreconditionFailed:
         log.debug("pdf already in gcs sha=%s — skip-if-exists", sha256)
     return f"gs://{settings.gcs_bucket}/originals/{sha256}.pdf"

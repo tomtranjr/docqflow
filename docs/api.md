@@ -15,7 +15,7 @@ DocQFlow exposes two surfaces:
 
 Pipeline endpoints require a Supabase JWT in the `Authorization` header:
 
-```
+```http
 Authorization: Bearer <supabase_access_token>
 ```
 

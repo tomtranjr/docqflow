@@ -13,6 +13,7 @@ from uuid import UUID
 
 import pypdf.errors
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from src.api.auth import get_current_user_id
 from src.api.documents_pg import upsert_document
@@ -92,7 +93,8 @@ async def process_document(
     # Pipeline succeeded — only now is it safe to upload + persist so 422 / 503
     # reject paths don't leave orphan GCS blobs or documents rows.
     sha = compute_sha256(pdf_bytes)
-    gcs_path = upload_pdf_if_absent(sha, pdf_bytes)
+    # Offload the synchronous GCS HTTP write so it doesn't block the event loop.
+    gcs_path = await run_in_threadpool(upload_pdf_if_absent, sha, pdf_bytes)
     document_id = await upsert_document(
         uploaded_by=user_id,
         sha256=sha,
