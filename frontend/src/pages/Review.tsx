@@ -10,12 +10,14 @@ import {
   EditIcon,
   FlagIcon,
   HashIcon,
+  SparkleIcon,
   UserIcon,
   WarnIcon,
   ZoomInIcon,
   ZoomOutIcon,
 } from '@/components/brand/icons'
 import { ProcessStrip } from '@/components/layout/ProcessStrip'
+import { AssessmentPanel } from '@/components/review/AssessmentPanel'
 import { FieldsPanel } from '@/components/review/FieldsPanel'
 import { TimelinePanel } from '@/components/review/TimelinePanel'
 import { HistoryPanel } from '@/components/review/HistoryPanel'
@@ -36,7 +38,7 @@ import type {
 
 const PdfViewer = lazy(() => import('@/components/pdf/PdfViewer'))
 
-type Tab = 'fields' | 'timeline' | 'history'
+type Tab = 'assessment' | 'fields' | 'timeline' | 'history'
 
 function fieldsFromExtraction(state: ExtractionState): Record<string, PermitField> {
   if (state.kind !== 'ok') return {}
@@ -87,7 +89,12 @@ export function Review() {
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeField, setActiveField] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('fields')
+  // Null until the user picks a tab. We derive the effective tab below so
+  // pipeline data can promote 'assessment' to default the moment it lands —
+  // without a setState-in-effect cascade.
+  const [manualTab, setManualTab] = useState<Tab | null>(null)
+  const tab: Tab = manualTab ?? (pipelineResult ? 'assessment' : 'fields')
+  const setTab = setManualTab
   const [zoom, setZoom] = useState(1)
   const [page, setPage] = useState(1)
 
@@ -166,6 +173,13 @@ export function Review() {
           <ChevronLeftIcon size={14} />
         </RailBtn>
         <div style={{ height: 12 }} />
+        <RailBtn
+          label="Pipeline assessment"
+          active={tab === 'assessment'}
+          onClick={() => setTab('assessment')}
+        >
+          <SparkleIcon size={14} />
+        </RailBtn>
         <RailBtn label="Extracted fields" active={tab === 'fields'} onClick={() => setTab('fields')}>
           <DocIcon size={14} />
         </RailBtn>
@@ -348,6 +362,7 @@ export function Review() {
               minWidth: 0,
             }}
           >
+            {tab === 'assessment' && <AssessmentPanel result={pipelineResult} />}
             {tab === 'fields' && (
               <FieldsPanel
                 permit={permit}
