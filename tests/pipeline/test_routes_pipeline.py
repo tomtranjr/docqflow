@@ -278,6 +278,17 @@ async def test_process_requires_auth(
     assert "Authorization" in response.json()["detail"]
 
 
+async def test_get_current_user_id_bypassed_when_disable_auth_flag_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Temp (docqflow-h39): DOCQFLOW_DISABLE_AUTH bypasses JWT, returns dev UUID."""
+    monkeypatch.setenv("DOCQFLOW_DISABLE_AUTH", "true")
+    from src.api.auth import _DEV_USER_ID
+
+    result = await get_current_user_id(authorization=None)
+    assert result == _DEV_USER_ID
+
+
 async def test_get_document_happy_path(
     authed_client: AsyncClient,
     fake_persistence: dict[str, Any],

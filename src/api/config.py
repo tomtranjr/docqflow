@@ -22,6 +22,10 @@ class Settings:
     gcs_bucket: str
     gcp_project: str
     cors_allowed_origins: tuple[str, ...]
+    # Temporary (docqflow-h39): when true, get_current_user_id bypasses JWT
+    # verification and returns a fixed dev UUID. Lets the Review page reach
+    # the pipeline endpoints while the frontend Supabase Auth flow is built.
+    disable_auth: bool
 
 
 def _parse_csv(value: str) -> tuple[str, ...]:
@@ -47,4 +51,6 @@ def load_settings() -> Settings:
                 "https://docqflow.vercel.app,http://localhost:3000,http://localhost:5173",
             )
         ),
+        disable_auth=os.getenv("DOCQFLOW_DISABLE_AUTH", "").lower()
+        in ("1", "true", "yes"),
     )
