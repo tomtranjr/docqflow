@@ -132,6 +132,9 @@ jobs:
       IMAGE_NAME: docqflow
       CLOUD_RUN_SERVICE: docqflow-api-dev
       PREFLIGHT_TAG: preflight
+      MODEL_BUCKET: docqflow-models
+      MODEL_OBJECT: model/model.joblib
+      MODEL_LOCAL_PATH: models/model.joblib
     steps:
       - uses: actions/checkout@v4
 
@@ -143,6 +146,15 @@ jobs:
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Fetch classifier model from GCS
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "${MODEL_LOCAL_PATH}")"
+          gcloud storage cp \
+            "gs://${MODEL_BUCKET}/${MODEL_OBJECT}" \
+            "${MODEL_LOCAL_PATH}"
+          ls -l "${MODEL_LOCAL_PATH}"
 
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
