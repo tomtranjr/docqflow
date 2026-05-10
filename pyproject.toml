@@ -20,6 +20,9 @@ dependencies = [
     "pydantic>=2",
     "rapidfuzz>=3.14.5",
     "litellm>=1.83.0",
+    "google-cloud-storage>=3.10.1",
+    "asyncpg>=0.31.0",
+    "pyjwt[crypto]>=2.12.1",
 ]
 
 [project.optional-dependencies]
