@@ -196,9 +196,9 @@ jobs:
             echo "::error::Could not resolve preflight URL for tag '${PREFLIGHT_TAG}'. Aborting."
             exit 1
           fi
-          echo "Probing ${PREFLIGHT_URL}/health for up to 60s (new revision is not yet serving production traffic)..."
+          echo "Probing ${PREFLIGHT_URL}/api/health for up to 60s (new revision is not yet serving production traffic)..."
           for i in $(seq 1 30); do
-            code="$(curl -s -o /dev/null -w '%{http_code}' "${PREFLIGHT_URL}/health" || echo '000')"
+            code="$(curl -s -o /dev/null -w '%{http_code}' "${PREFLIGHT_URL}/api/health" || echo '000')"
             if [ "${code}" = "200" ]; then
               echo "Health check passed on attempt ${i} (HTTP 200)"
               exit 0
