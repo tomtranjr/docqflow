@@ -86,7 +86,12 @@ export function Review() {
   const fallbackPermit = useMemo(() => PERMITS.find((p) => p.id === id) ?? PERMITS[0], [id])
 
   const [liveEntry, setLiveEntry] = useState<HistoryEntry | null>(null)
-  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
+  // Tag the cached result with the sha it belongs to so consumers can gate on
+  // sha equality during render — prevents the previous document's assessment
+  // from leaking across context changes without a setState-in-effect cascade.
+  const [pipelineState, setPipelineState] = useState<{ sha: string; result: PipelineResult } | null>(null)
+  const pipelineResult: PipelineResult | null =
+    pipelineState && pipelineState.sha === liveEntry?.pdf_sha256 ? pipelineState.result : null
   const [error, setError] = useState<string | null>(null)
   const [activeField, setActiveField] = useState<string | null>(null)
   // Null until the user picks a tab. We derive the effective tab below so
@@ -125,7 +130,7 @@ export function Review() {
     let cancelled = false
     getDocument(sha)
       .then((res) => {
-        if (!cancelled) setPipelineResult(res)
+        if (!cancelled && res) setPipelineState({ sha, result: res })
       })
       .catch(() => {
         // Network / 5xx — keep the placeholder fallback rather than show an error

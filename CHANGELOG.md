@@ -2,6 +2,12 @@
 
 Notable changes to DocQFlow are recorded here so reviewers, teammates, and AI agents can quickly see what was added or changed and when.
 
+## 2026-05-10
+
+### Fixed
+
+- `frontend/src/pages/Review.tsx`: the previous document's pipeline assessment no longer leaks across `liveEntry` changes. The state shape changed from `useState<PipelineResult | null>` to `useState<{ sha: string; result: PipelineResult } | null>`, and `pipelineResult` is now derived during render via sha equality (`pipelineState && pipelineState.sha === liveEntry?.pdf_sha256 ? pipelineState.result : null`). Result: when `liveEntry` switches to a doc whose `pdf_sha256` is missing or whose `getDocument` fetch fails/404s, consumers (`tab` derivation, `fields` derivation, `<AssessmentPanel result={…}>`) see `null` until the new sha's fetch resolves — so the derived default tab (`manualTab ?? (pipelineResult ? 'assessment' : 'fields')`) can no longer be incorrectly forced to `"assessment"` for a doc that doesn't have one. CodeRabbit's literal suggestion (`setPipelineResult(null)` synchronously in the effect body) was rejected because it trips the `react-hooks/set-state-in-effect` rule that the rest of this file is structured to avoid — the gated-read approach makes staleness impossible at the read site without an imperative reset. Surfaced by CodeRabbit on PR #47.
+
 ## 2026-05-09
 
 ### Added
