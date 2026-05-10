@@ -20,6 +20,13 @@ from src.api.config import load_settings
 log = logging.getLogger(__name__)
 
 
+# Temporary (docqflow-h39): fixed UUID returned when DOCQFLOW_DISABLE_AUTH is on.
+# All anonymous requests are attributed to this user so POST/GET round-trips
+# resolve the same pipeline_runs row. Delete this constant and the early
+# return below once the frontend Supabase Auth flow lands.
+_DEV_USER_ID = UUID("00000000-0000-0000-0000-00000000d0c0")
+
+
 async def get_current_user_id(
     authorization: Annotated[str | None, Header()] = None,
 ) -> UUID:
@@ -27,7 +34,13 @@ async def get_current_user_id(
 
     401 on missing / malformed / expired / forged tokens. 500 if the JWT secret
     is not configured — that's a deployment misconfiguration, not a client bug.
+
+    Temporary bypass (docqflow-h39): when ``DOCQFLOW_DISABLE_AUTH=true`` is set
+    on the deployment, returns a fixed dev UUID without inspecting the header.
+    Lets the Review page work while the frontend Supabase Auth flow is built.
     """
+    if load_settings().disable_auth:
+        return _DEV_USER_ID
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
