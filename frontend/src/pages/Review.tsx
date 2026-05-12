@@ -10,14 +10,12 @@ import {
   EditIcon,
   FlagIcon,
   HashIcon,
-  SparkleIcon,
   UserIcon,
   WarnIcon,
   ZoomInIcon,
   ZoomOutIcon,
 } from '@/components/brand/icons'
 import { ProcessStrip } from '@/components/layout/ProcessStrip'
-import { AssessmentPanel } from '@/components/review/AssessmentPanel'
 import { FieldsPanel } from '@/components/review/FieldsPanel'
 import { TimelinePanel } from '@/components/review/TimelinePanel'
 import { HistoryPanel } from '@/components/review/HistoryPanel'
@@ -38,7 +36,7 @@ import type {
 
 const PdfViewer = lazy(() => import('@/components/pdf/PdfViewer'))
 
-type Tab = 'assessment' | 'fields' | 'timeline' | 'history'
+type Tab = 'fields' | 'timeline' | 'history'
 
 function fieldsFromExtraction(state: ExtractionState): Record<string, PermitField> {
   if (state.kind !== 'ok') return {}
@@ -87,19 +85,14 @@ export function Review() {
 
   const [liveEntry, setLiveEntry] = useState<HistoryEntry | null>(null)
   // Tag the cached result with the sha it belongs to so consumers can gate on
-  // sha equality during render — prevents the previous document's assessment
+  // sha equality during render — prevents the previous document's findings
   // from leaking across context changes without a setState-in-effect cascade.
   const [pipelineState, setPipelineState] = useState<{ sha: string; result: PipelineResult } | null>(null)
   const pipelineResult: PipelineResult | null =
     pipelineState && pipelineState.sha === liveEntry?.pdf_sha256 ? pipelineState.result : null
   const [error, setError] = useState<string | null>(null)
   const [activeField, setActiveField] = useState<string | null>(null)
-  // Null until the user picks a tab. We derive the effective tab below so
-  // pipeline data can promote 'assessment' to default the moment it lands —
-  // without a setState-in-effect cascade.
-  const [manualTab, setManualTab] = useState<Tab | null>(null)
-  const tab: Tab = manualTab ?? (pipelineResult ? 'assessment' : 'fields')
-  const setTab = setManualTab
+  const [tab, setTab] = useState<Tab>('fields')
   const [zoom, setZoom] = useState(1)
   const [page, setPage] = useState(1)
 
@@ -178,13 +171,6 @@ export function Review() {
           <ChevronLeftIcon size={14} />
         </RailBtn>
         <div style={{ height: 12 }} />
-        <RailBtn
-          label="Pipeline assessment"
-          active={tab === 'assessment'}
-          onClick={() => setTab('assessment')}
-        >
-          <SparkleIcon size={14} />
-        </RailBtn>
         <RailBtn label="Extracted fields" active={tab === 'fields'} onClick={() => setTab('fields')}>
           <DocIcon size={14} />
         </RailBtn>
@@ -367,11 +353,10 @@ export function Review() {
               minWidth: 0,
             }}
           >
-            {tab === 'assessment' && <AssessmentPanel result={pipelineResult} />}
             {tab === 'fields' && (
               <FieldsPanel
-                permit={permit}
                 fields={fields}
+                pipelineResult={pipelineResult}
                 activeField={activeField}
                 setActiveField={setActiveField}
                 showConfidence={showConfidence}
