@@ -8,6 +8,7 @@ interface Preferences {
   reviewerName: string
   firstName: string
   lastName: string
+  isAuthenticated: boolean
 }
 
 interface PreferencesContextValue extends Preferences {
@@ -15,6 +16,8 @@ interface PreferencesContextValue extends Preferences {
   setShowConfidence: (b: boolean) => void
   setReviewerName: (s: string) => void
   setReviewerFullName: (firstName: string, lastName: string) => void
+  signInAsGuest: () => void
+  signOut: () => void
 }
 
 const STORAGE_KEY = 'docqflow.prefs'
@@ -25,6 +28,7 @@ const DEFAULTS: Preferences = {
   reviewerName: 'Reviewer',
   firstName: '',
   lastName: '',
+  isAuthenticated: false,
 }
 
 const Ctx = createContext<PreferencesContextValue | null>(null)
@@ -64,6 +68,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         reviewerName: `${firstName.trim()} ${lastName.trim()}`.trim() || 'Reviewer',
+        isAuthenticated: true,
+      })),
+    signInAsGuest: () => setPrefs((p) => ({ ...p, isAuthenticated: true })),
+    signOut: () =>
+      setPrefs((p) => ({
+        ...p,
+        isAuthenticated: false,
+        firstName: '',
+        lastName: '',
+        reviewerName: 'Reviewer',
       })),
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
@@ -87,3 +101,5 @@ export const useReviewerName = () => usePreferences().reviewerName
 export const useFirstName = () => usePreferences().firstName
 // eslint-disable-next-line react-refresh/only-export-components
 export const useLastName = () => usePreferences().lastName
+// eslint-disable-next-line react-refresh/only-export-components
+export const useIsAuthenticated = () => usePreferences().isAuthenticated

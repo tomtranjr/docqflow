@@ -41,7 +41,7 @@ export function TopBar() {
   const reviewerName = useReviewerName()
   const firstName = useFirstName()
   const lastName = useLastName()
-  const { theme, setTheme, setReviewerName } = usePreferences()
+  const { theme, setTheme, signOut: clearAuth } = usePreferences()
   const { unreadCount } = useNotifications()
   const submissionsCount = useSubmissionsCount()
   const navigate = useNavigate()
@@ -68,7 +68,7 @@ export function TopBar() {
 
   function signOut() {
     setOpenMenu(false)
-    setReviewerName(SENTINEL)
+    clearAuth()
     navigate('/login')
   }
 

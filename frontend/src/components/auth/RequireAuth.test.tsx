@@ -27,15 +27,26 @@ function setup(initialPath: string) {
 describe('RequireAuth', () => {
   beforeEach(() => localStorage.clear())
 
-  it('redirects to /login when reviewer name is the sentinel default', () => {
+  it('redirects to /login when not authenticated', () => {
     setup('/app')
     expect(screen.getByText('login page')).toBeInTheDocument()
     expect(screen.queryByText('app content')).not.toBeInTheDocument()
   })
 
-  it('renders children when reviewer name is set', () => {
-    localStorage.setItem('docqflow.prefs', JSON.stringify({ reviewerName: 'alex' }))
+  it('renders children when authenticated', () => {
+    localStorage.setItem('docqflow.prefs', JSON.stringify({ isAuthenticated: true }))
     setup('/app')
     expect(screen.getByText('app content')).toBeInTheDocument()
+  })
+
+  it('redirects when reviewer name is set but isAuthenticated is false', () => {
+    // Regression: the old gate inferred auth from reviewerName !== "Reviewer".
+    // The new gate must ignore reviewerName entirely.
+    localStorage.setItem(
+      'docqflow.prefs',
+      JSON.stringify({ reviewerName: 'alex', isAuthenticated: false }),
+    )
+    setup('/app')
+    expect(screen.getByText('login page')).toBeInTheDocument()
   })
 })
