@@ -70,7 +70,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         reviewerName: `${firstName.trim()} ${lastName.trim()}`.trim() || 'Reviewer',
         isAuthenticated: true,
       })),
-    signInAsGuest: () => setPrefs((p) => ({ ...p, isAuthenticated: true })),
+    signInAsGuest: () =>
+      setPrefs((p) => ({
+        ...p,
+        isAuthenticated: true,
+        firstName: '',
+        lastName: '',
+        reviewerName: 'Reviewer',
+      })),
     signOut: () =>
       setPrefs((p) => ({
         ...p,
