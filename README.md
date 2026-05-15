@@ -85,4 +85,4 @@ The point of the project is to make the AI-for-government argument concrete. Pic
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and code style. Issues are tracked with [`bd`](https://github.com/beads-dev/beads) (see `CLAUDE.md`). Recent changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and code style. Recent changes are recorded in [CHANGELOG.md](CHANGELOG.md).
