@@ -35,9 +35,7 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
       sub: p.address,
       go: () => navigate(`/app/review/${p.id}`),
     })),
-    { kind: 'page', label: 'Go to Dashboard', go: () => navigate('/app') },
-    { kind: 'page', label: 'Go to Submissions', go: () => navigate('/app/submissions') },
-    { kind: 'page', label: 'Go to Reports', go: () => navigate('/app/reports') },
+    { kind: 'page', label: 'Go to Inbox', go: () => navigate('/app') },
     { kind: 'page', label: 'Go to Settings', go: () => navigate('/app/settings') },
   ]
   const items = q ? all.filter((x) => x.label.toLowerCase().includes(q.toLowerCase())) : all

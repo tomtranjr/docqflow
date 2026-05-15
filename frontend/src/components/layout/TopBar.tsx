@@ -3,9 +3,6 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { Wordmark } from '@/components/brand/Wordmark'
 import {
   BellIcon,
-  ChartIcon,
-  DashboardIcon,
-  DocIcon,
   Icons,
   InboxIcon,
   MoonIcon,
@@ -18,13 +15,9 @@ import { NotificationsPanel } from './NotificationsPanel'
 import { UploadButton } from './UploadButton'
 import { useFirstName, useLastName, usePreferences, useReviewerName } from '@/context/PreferencesContext'
 import { useNotifications } from '@/context/NotificationsContext'
-import { useSubmissionsCount } from '@/hooks/useSubmissionsCount'
 
 const NAV = [
-  { to: '/app', end: true, label: 'Dashboard', icon: DashboardIcon },
-  { to: '/app/submissions', end: false, label: 'Submissions', icon: InboxIcon },
-  { to: '/app/queue', end: false, label: 'Review', icon: DocIcon },
-  { to: '/app/reports', end: false, label: 'Reports', icon: ChartIcon },
+  { to: '/app', end: true, label: 'Inbox', icon: InboxIcon },
   { to: '/app/settings', end: false, label: 'Settings', icon: SettingsIcon },
 ] as const
 
@@ -43,7 +36,6 @@ export function TopBar() {
   const lastName = useLastName()
   const { theme, setTheme, signOut: clearAuth } = usePreferences()
   const { unreadCount } = useNotifications()
-  const submissionsCount = useSubmissionsCount()
   const navigate = useNavigate()
   const [openBell, setOpenBell] = useState(false)
   const [openCmd, setOpenCmd] = useState(false)
@@ -106,7 +98,6 @@ export function TopBar() {
       <nav style={{ display: 'flex', height: '100%', marginLeft: 16 }} aria-label="Primary">
         {NAV.map((n) => {
           const Icon = n.icon
-          const isSubmissions = n.to === '/app/submissions'
           return (
             <NavLink
               key={n.to}
@@ -119,28 +110,6 @@ export function TopBar() {
                 <Icon size={16} />
               </span>
               <span>{n.label}</span>
-              {isSubmissions && submissionsCount > 0 && (
-                <span
-                  aria-label={`${submissionsCount} permits in submissions`}
-                  className="mono tabular"
-                  style={{
-                    minWidth: 18,
-                    height: 18,
-                    padding: '0 6px',
-                    borderRadius: 9,
-                    background: 'var(--blue-500)',
-                    color: '#fff',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    lineHeight: 1,
-                  }}
-                >
-                  {submissionsCount > 99 ? '99+' : submissionsCount}
-                </span>
-              )}
             </NavLink>
           )
         })}

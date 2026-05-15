@@ -67,7 +67,7 @@ function entryToPermit(entry: HistoryEntry, fallbackId: string): Permit {
       year: 'numeric',
     }),
     daysOpen: ageDays,
-    stage: 'review',
+    stage: 'ready',
     confidence: entry.confidence,
     flags: entry.confidence < 0.7 ? ['low_confidence'] : [],
     pages: 1,
@@ -97,6 +97,22 @@ export function Review() {
   const [page, setPage] = useState(1)
 
   const extraction = usePlaceholderExtraction(id ?? '')
+
+  // Persist the last-opened permit so the Inbox can show a "Resume X" banner.
+  // We only care about the most recent one, so a single localStorage key is
+  // enough — no history, no eviction logic.
+  useEffect(() => {
+    if (!id) return
+    try {
+      window.localStorage.setItem(
+        'docqflow:last-review',
+        JSON.stringify({ id, savedAt: Date.now() }),
+      )
+    } catch {
+      // Storage may be disabled (private mode, quota). The resume banner is
+      // a convenience — failing to record it just means no banner next visit.
+    }
+  }, [id])
 
   useEffect(() => {
     if (!isLive) return
@@ -167,7 +183,7 @@ export function Review() {
           gap: 4,
         }}
       >
-        <RailBtn label="Back to queue" onClick={() => navigate('/app/submissions')}>
+        <RailBtn label="Back to inbox" onClick={() => navigate('/app')}>
           <ChevronLeftIcon size={14} />
         </RailBtn>
         <div style={{ height: 12 }} />
@@ -198,10 +214,10 @@ export function Review() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--ink-4)' }}>
                 <button
                   type="button"
-                  onClick={() => navigate('/app/submissions')}
+                  onClick={() => navigate('/app')}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0 }}
                 >
-                  Submissions
+                  Inbox
                 </button>
                 <span>›</span>
                 <span className="mono">{permit.id}</span>
