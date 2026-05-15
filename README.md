@@ -27,7 +27,7 @@ A reviewer opens the Inbox, sees one row per permit with its current state and t
 
 ## See it work
 
-The Inbox UI in the gif above is the reviewer experience. The two terminal recordings below show the same pipeline from the outside.
+The Inbox UI in the gif above is the reviewer experience. The two terminal recordings below show the system from the outside, with each one exercising a different slice of the pipeline.
 
 ### Eval harness grading itself
 

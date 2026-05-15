@@ -1,5 +1,7 @@
 # Re-record with: vhs docs/vhs/api-quickstart.tape
-# Requires the API running locally on :8080 (uv run uvicorn src.server:app --port 8080).
+# Requires:
+#   - the API running locally on :8080 (uv run uvicorn src.server:app --port 8080)
+#   - jq on PATH (used to pretty-print the curl output; install via your package manager)
 
 Output docs/vhs/api-quickstart.gif
 
