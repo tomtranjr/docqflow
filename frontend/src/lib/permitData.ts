@@ -5,7 +5,13 @@
 
 export type DepartmentKey = 'Building' | 'Electrical' | 'Plumbing' | 'Zoning' | 'Other'
 
-export type StageKey = 'extract' | 'validate' | 'classify' | 'review' | 'complete'
+// Reviewer-facing pipeline states. The earlier model (extract / validate /
+// classify) split the automated pipeline into stages that a reviewer can't
+// distinguish or act on; they all happen in one server-side run, so we
+// collapse them into a single `processing` state. Rejected is the bucket for
+// gate-check failures — visible so the reviewer can re-upload, override, or
+// dismiss them.
+export type StageKey = 'processing' | 'ready' | 'rejected' | 'complete'
 
 export interface PermitField {
   v: string | null
@@ -39,6 +45,9 @@ export interface Permit {
   pages: number
   fields?: Record<string, PermitField>
   timeline?: TimelineEvent[]
+  // Populated when stage === 'rejected'. Human-readable reason from the
+  // TF-IDF gate-check (e.g. "Not a recognized permit form").
+  rejectReason?: string
 }
 
 export const PERMITS: Permit[] = [
@@ -55,7 +64,7 @@ export const PERMITS: Permit[] = [
     sqft: null,
     received: 'Apr 22, 2026',
     daysOpen: 3,
-    stage: 'review',
+    stage: 'ready',
     confidence: 0.94,
     flags: ['missing_contractor', 'missing_sqft'],
     pages: 2,
@@ -93,7 +102,7 @@ export const PERMITS: Permit[] = [
     sqft: 1200,
     received: 'Apr 24, 2026',
     daysOpen: 1,
-    stage: 'classify',
+    stage: 'processing',
     confidence: 0.88,
     flags: [],
     pages: 4,
@@ -111,7 +120,7 @@ export const PERMITS: Permit[] = [
     sqft: 220,
     received: 'Apr 25, 2026',
     daysOpen: 0,
-    stage: 'validate',
+    stage: 'processing',
     confidence: 0.72,
     flags: ['low_confidence'],
     pages: 3,
@@ -129,7 +138,7 @@ export const PERMITS: Permit[] = [
     sqft: 480,
     received: 'Apr 19, 2026',
     daysOpen: 6,
-    stage: 'review',
+    stage: 'ready',
     confidence: 0.96,
     flags: [],
     pages: 8,
@@ -147,7 +156,7 @@ export const PERMITS: Permit[] = [
     sqft: 32,
     received: 'Apr 21, 2026',
     daysOpen: 4,
-    stage: 'extract',
+    stage: 'processing',
     confidence: 0.62,
     flags: ['low_confidence', 'missing_address'],
     pages: 2,
@@ -183,7 +192,7 @@ export const PERMITS: Permit[] = [
     sqft: 0,
     received: 'Apr 24, 2026',
     daysOpen: 1,
-    stage: 'review',
+    stage: 'ready',
     confidence: 0.91,
     flags: [],
     pages: 3,
@@ -219,7 +228,7 @@ export const PERMITS: Permit[] = [
     sqft: 320,
     received: 'Apr 25, 2026',
     daysOpen: 0,
-    stage: 'extract',
+    stage: 'processing',
     confidence: 0.81,
     flags: [],
     pages: 4,
@@ -237,7 +246,7 @@ export const PERMITS: Permit[] = [
     sqft: 60,
     received: 'Apr 24, 2026',
     daysOpen: 1,
-    stage: 'validate',
+    stage: 'processing',
     confidence: 0.78,
     flags: [],
     pages: 2,
@@ -255,7 +264,7 @@ export const PERMITS: Permit[] = [
     sqft: 720,
     received: 'Apr 17, 2026',
     daysOpen: 8,
-    stage: 'review',
+    stage: 'ready',
     confidence: 0.93,
     flags: [],
     pages: 14,
@@ -273,10 +282,30 @@ export const PERMITS: Permit[] = [
     sqft: 0,
     received: 'Apr 25, 2026',
     daysOpen: 0,
-    stage: 'extract',
+    stage: 'rejected',
     confidence: 0.31,
     flags: ['low_confidence', 'missing_address', 'needs_human'],
     pages: 1,
+    rejectReason: 'Gate check: document does not match any known permit form template.',
+  },
+  {
+    id: 'OTH-26-00112',
+    filename: 'site_photos_unsigned.pdf',
+    applicant: 'Hye-Jin Park',
+    address: '—',
+    neighborhood: '—',
+    parcel: '—',
+    type: 'Unclassified',
+    department: 'Other',
+    cost: 0,
+    sqft: 0,
+    received: 'Apr 26, 2026',
+    daysOpen: 0,
+    stage: 'rejected',
+    confidence: 0.18,
+    flags: ['gate_check_failed'],
+    pages: 6,
+    rejectReason: 'Gate check: detected as photo set, not a permit application.',
   },
 ]
 
@@ -286,11 +315,13 @@ export interface Stage {
   sub: string
 }
 
+// Order matches the visual progression a reviewer sees in the Inbox filter
+// chips. `rejected` sits beside `complete` because both are terminal states
+// from the reviewer's perspective (no further automated action).
 export const STAGES: Stage[] = [
-  { key: 'extract', label: 'Extract', sub: 'AI extracts fields' },
-  { key: 'validate', label: 'Validate', sub: 'Completeness check' },
-  { key: 'classify', label: 'Classify', sub: 'Route to department' },
-  { key: 'review', label: 'Review', sub: 'Human verification' },
+  { key: 'processing', label: 'Processing', sub: 'Gate check + extraction' },
+  { key: 'ready', label: 'Ready', sub: 'Human verification' },
+  { key: 'rejected', label: 'Rejected', sub: 'Gate check failed' },
   { key: 'complete', label: 'Complete', sub: 'Approved & filed' },
 ]
 
@@ -379,6 +410,7 @@ export const MAP_POINTS: MapPoint[] = [
   { lat: 37.7609, lng: -122.4350, perm: 'PLM-26-00845', n: 'Castro' },
   { lat: 37.7456, lng: -122.4582, perm: 'BLD-26-04860', n: 'Forest Hill' },
   { lat: 37.7434, lng: -122.4892, perm: 'BLD-26-04722', n: 'Sunset' },
+  { lat: 37.7689, lng: -122.4486, perm: 'OTH-26-00112', n: 'Western Addition' },
 ]
 
 export const REVIEWER = {

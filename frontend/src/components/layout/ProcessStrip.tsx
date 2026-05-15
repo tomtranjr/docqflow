@@ -7,7 +7,7 @@ interface ProcessStripProps {
 }
 
 // Animated pipeline strip — pulse on the active stage, check on done stages.
-export function ProcessStrip({ active = 'review', compact = false }: ProcessStripProps) {
+export function ProcessStrip({ active = 'ready', compact = false }: ProcessStripProps) {
   const idx = STAGES.findIndex((x) => x.key === active)
   return (
     <div
