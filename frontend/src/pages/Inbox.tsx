@@ -59,7 +59,10 @@ export function Inbox() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const all = useMemo<Permit[]>(() => {
-    const base = entries.length === 0 ? PERMITS : [...entries.map(liveToPermit), ...PERMITS]
+    // Live history is the source of truth when present. Demo PERMITS are only
+    // shown when there are no real uploads yet — mixing the two would surface
+    // mock records alongside the reviewer's actual work.
+    const base = entries.length === 0 ? PERMITS : entries.map(liveToPermit)
     return base
       .filter((p) => !dismissed.has(p.id))
       .map((p) => (stageOverrides[p.id] ? { ...p, stage: stageOverrides[p.id] } : p))

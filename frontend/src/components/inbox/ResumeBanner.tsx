@@ -18,7 +18,11 @@ function readLastReview(): LastReview | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<LastReview>
     if (typeof parsed?.id !== 'string') return null
-    return { id: parsed.id, savedAt: Number(parsed.savedAt) || 0 }
+    // Reject missing / corrupt timestamps so formatAge() never renders
+    // "opened 56 years ago" from a Unix-epoch fallback.
+    const savedAt = Number(parsed.savedAt)
+    if (!Number.isFinite(savedAt) || savedAt <= 0) return null
+    return { id: parsed.id, savedAt }
   } catch {
     return null
   }

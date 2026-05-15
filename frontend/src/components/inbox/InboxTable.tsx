@@ -32,15 +32,23 @@ function RejectedActions({
   const { addAndProcess } = useUpload()
   const { dispatch } = useUploadContext()
 
-  function pickFiles(e: React.ChangeEvent<HTMLInputElement>) {
+  async function pickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     if (files.length === 0) return
     // Drop any in-flight items first so the post-upload navigation lands on
     // the new file, not whatever was queued before.
     dispatch({ type: 'CLEAR' })
-    void addAndProcess(files)
-    onDismiss?.(permit.id)
+    try {
+      await addAndProcess(files)
+      // Only dismiss once the new upload succeeded. On failure (gate-check
+      // reject, network error) the rejected row stays visible so the reviewer
+      // can retry without losing the recovery affordance.
+      onDismiss?.(permit.id)
+    } catch {
+      // Swallowed deliberately: addAndProcess surfaces its own toast/error
+      // state. We just want to avoid the eager dismiss on failure.
+    }
   }
 
   return (
@@ -132,6 +140,17 @@ export function InboxTable({
               <Fragment key={p.id}>
                 <tr
                   onClick={rowClickable ? () => navigate(`/app/review/${p.id}`) : undefined}
+                  onKeyDown={
+                    rowClickable
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            navigate(`/app/review/${p.id}`)
+                          }
+                        }
+                      : undefined
+                  }
+                  tabIndex={rowClickable ? 0 : -1}
                   onMouseEnter={() => setHoverId(p.id)}
                   onMouseLeave={() => setHoverId((cur) => (cur === p.id ? null : cur))}
                   style={{
