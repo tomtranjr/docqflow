@@ -1,145 +1,88 @@
 # DocQFlow
 
-A PDF document classifier built with TF-IDF + Logistic Regression, served via FastAPI. Upload a PDF and get back a predicted document class with per-class probabilities.
+AI for the receiving side of government forms.
 
-![DocQFlow demo](docs/docqflow-demo.gif)
+![DocQFlow inbox demo](docs/docqflow-demo.gif)
 
-## Setup
+## The problem
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already.
+A first wave of AI products has made it remarkably easy for businesses and individuals to fill out forms. The other side of that same workflow has not kept up. Local, state, and federal governments still receive most of those forms on paper, route them between desks, and process them by hand.
 
-2. Install dependencies:
+The result is long backlogs, inconsistent decisions, and a lot of human time spent on tasks a machine can prepare in seconds. Estonia has shown what digital government looks like when this gap is closed. Most of the rest of the world is nowhere near it yet.
 
-   ```bash
-   uv sync
-   ```
+DocQFlow is a working prototype of what AI can look like on the government side of the counter.
 
-3. Copy `.env.example` to `.env` and fill in the MLflow server IP:
+## What DocQFlow does
 
-   ```bash
-   cp .env.example .env
-   ```
+DocQFlow picks one real-world form, the San Francisco Form 3-8 building permit, and runs every incoming PDF through six stages:
 
-   Set the `MLFLOW_TRACKING_URI` variable to your MLflow server address.
+1. **Classify** the document so unknown forms get bounced before a reviewer ever sees them.
+2. **Gate-check** the file (size, page count, AcroForm presence) so broken inputs never reach the pipeline.
+3. **Store** the original PDF in object storage with a content hash so duplicates collapse into one record.
+4. **Extract** all 87 fields from the AcroForm.
+5. **Validate** those fields against a gazetteer and the form's own internal rules.
+6. **Reason** about the result with an LLM and produce a list of human-readable issues.
 
-4. Test the MLflow server connection:
+A reviewer opens the Inbox, sees one row per permit with its current state and the issues already flagged, and either confirms or overrides. They never have to read a clean permit cover to cover again. The system records every decision so the next iteration can learn from it.
 
-   ```bash
-   uv run python scripts/check_mlflow.py
-   ```
+## See it work
 
-## Running Locally (without Docker)
+The Inbox UI in the gif above is the reviewer experience. The two terminal recordings below show the same pipeline from the outside.
 
-1. Train the model (you need PDF files in `data/` organized by class folder):
+### Eval harness grading itself
 
-   ```bash
-   uv run python -m src.classifier train --data-dir data
-   ```
+Every change to the extract, validate, and reason stages is scored against a labelled corpus. Same script, same corpus, same labels, so the diff in metrics tells you exactly what got better or worse.
 
-   For the full training guide (folder structure, CLI options, how the model works, and MLflow logging), see [docs/model-training.md](docs/model-training.md).
+![Eval harness gif](docs/vhs/eval-harness.gif)
 
-   To generate training PDFs from SF Data Portal data (correct + minor-error + major-error variants for the validation pipeline), see [docs/permit-generation.md](docs/permit-generation.md).
+Full details and the metric definitions live in [docs/eval.md](docs/eval.md).
 
-2. Start the API server:
+### API quickstart
 
-   ```bash
-   uv run uvicorn src.server:app --reload --port 8080
-   ```
+With the API running locally, you can post a permit PDF and get back a classification with per-class probabilities.
 
-3. Open [http://localhost:8080/docs](http://localhost:8080/docs) to see the interactive API docs.
+![API quickstart gif](docs/vhs/api-quickstart.gif)
 
-## Running with Docker
+A sample permit is checked in at [`samples/sample-permit.pdf`](samples/sample-permit.pdf) so the command in the gif is reproducible end-to-end.
 
-1. Build the image:
+## How it works at a glance
 
-   ```bash
-   docker build -t docqflow .
-   ```
+| Layer | Stack |
+|---|---|
+| API | FastAPI, Python 3.12, async by default |
+| Pipeline LLM | LiteLLM with a `cloud-fast` profile (OpenAI `gpt-4o-mini`) |
+| Frontend | React, Vite, TypeScript |
+| Data | Supabase Postgres, Supabase Auth (magic link plus allowlist) |
+| Blobs | Google Cloud Storage |
+| Tracking | MLflow for classifier training runs |
+| Deploy | Google Cloud Run with a no-traffic canary tag before promote |
 
-2. Run the container:
+The deeper technical pieces all live in `docs/`:
 
-   ```bash
-   docker run --name docqflow -p 8080:8080 docqflow
-   ```
+- [docs/api.md](docs/api.md): endpoint reference, auth, CORS
+- [docs/eval.md](docs/eval.md): eval harness, metrics, how to score a new profile
+- [docs/llm-profiles.md](docs/llm-profiles.md): LLM profile definitions and credentials
+- [docs/model-training.md](docs/model-training.md): classifier training for Stages 1 to 3
+- [docs/permit-generation.md](docs/permit-generation.md): synthetic training data generator
+- [docs/docker-registry.md](docs/docker-registry.md): pushing the image to Artifact Registry
+- [docs/setup/gcp.md](docs/setup/gcp.md) and [docs/setup/supabase.md](docs/setup/supabase.md): infra setup walkthroughs
 
-The API will be available at [http://localhost:8080](http://localhost:8080).
-
-To push the image to Google Artifact Registry, see [docs/docker-registry.md](docs/docker-registry.md).
-
-## API Endpoints
-
-### `GET /api/health`
-
-Confirms the model is loaded and ready.
+## Run it locally
 
 ```bash
-curl http://localhost:8080/api/health
+uv sync
+cp .env.example .env   # then fill in MLFLOW_TRACKING_URI and any other vars you need
+uv run uvicorn src.server:app --reload --port 8080
 ```
 
-```json
-{"status": "ok", "model_loaded": true}
-```
+Open [http://localhost:8080/docs](http://localhost:8080/docs) for the interactive API docs. For Docker, training, or the eval harness, follow the links in the section above.
 
-### `POST /api/predict`
+## Status and scope
 
-Upload a PDF file and get a classification prediction back.
+DocQFlow is a school project. There is one environment (`dev`), one form (SF Form 3-8), and no production deployment planned. Training data is generated by `scripts/generate_permits.py` so no real applicant data ever enters the system.
 
-```bash
-curl -X POST http://localhost:8080/api/predict \
-  -F "file=@your_document.pdf"
-```
-
-Example response:
-
-```json
-{
-  "label": "permit-3-8",
-  "probabilities": {
-    "not-permit-3-8": 0.401,
-    "permit-3-8": 0.599
-  }
-}
-```
-
-If the PDF has no extractable text, you'll get a 422 error:
-
-```json
-{"detail": "PDF valid but not processable"}
-```
-
-## MLflow Tracking
-
-Training runs are logged to a remote MLflow server (set `MLFLOW_TRACKING_URI` in `.env`). Each run records parameters, metrics, and the trained model artifact. See [docs/model-training.md](docs/model-training.md) for the full list of logged values.
+The point of the project is to make the AI-for-government argument concrete. Pick a real form, build the receiving-side pipeline end to end, and show that the resulting reviewer experience is one a real agency could actually use.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, pre-commit hooks, and code style guidelines.
-
-## Project Structure
-
-```text
-docqflow/
-├── src/
-│   ├── server.py             # FastAPI app + lifespan + static mount
-│   ├── classifier.py         # Model training, prediction, and text extraction
-│   └── api/
-│       ├── routes.py         # All HTTP endpoints (/api/predict, /api/health, /api/history, /api/stats)
-│       ├── models.py         # Pydantic response models
-│       └── database.py       # SQLite (aiosqlite) persistence layer
-├── scripts/
-│   ├── generate_permits.py   # Form 3-8 training data generator (correct/minor/major flavors)
-│   └── check_mlflow.py       # MLflow connection smoke test
-├── tests/                    # pytest suite + conftest
-├── frontend/                 # React SPA (Vite + TypeScript)
-├── Dockerfile                # Container setup for the classifier API
-├── pyproject.toml            # Project metadata and dependencies
-├── .pre-commit-config.yaml   # Pre-commit hook configuration
-├── CONTRIBUTING.md           # Development setup and code style guide
-├── .env.example              # Environment variable template (MLFLOW_TRACKING_URI)
-├── models/                   # Trained model artifacts (model.joblib)
-├── data/                     # Training PDFs organized by class folder
-└── docs/
-    ├── model-training.md     # Training guide, CLI options, and MLflow logging
-    ├── permit-generation.md  # Training data generator guide (flavors, mutations, labels.json)
-    └── docker-registry.md    # Pushing images to Google Artifact Registry
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and code style. Issues are tracked with [`bd`](https://github.com/beads-dev/beads) (see `CLAUDE.md`). Recent changes are recorded in [CHANGELOG.md](CHANGELOG.md).
