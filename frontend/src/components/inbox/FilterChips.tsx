@@ -25,8 +25,9 @@ export function FilterChips({ active, onChange, counts }: FilterChipsProps) {
       style={{
         display: 'flex',
         gap: 4,
-        padding: 3,
+        padding: 4,
         background: 'var(--surface-sunken)',
+        border: '1px solid var(--line-2)',
         borderRadius: 'var(--r)',
         width: 'fit-content',
       }}
@@ -45,16 +46,17 @@ export function FilterChips({ active, onChange, counts }: FilterChipsProps) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              height: 30,
+              height: 28,
               padding: '0 12px',
-              border: 'none',
+              border: isActive ? '1px solid var(--line-strong)' : '1px solid transparent',
               cursor: 'pointer',
               background: isActive ? 'var(--surface-card)' : 'transparent',
-              color: isActive ? 'var(--ink)' : 'var(--ink-3)',
+              color: isActive ? 'var(--ink)' : 'var(--ink-2)',
               fontSize: 12,
-              fontWeight: 500,
+              fontWeight: isActive ? 600 : 500,
               borderRadius: 6,
               boxShadow: isActive ? 'var(--shadow-1)' : 'none',
+              transition: 'background .12s var(--ease), color .12s var(--ease)',
             }}
           >
             <span>{c.label}</span>
@@ -62,7 +64,7 @@ export function FilterChips({ active, onChange, counts }: FilterChipsProps) {
               className="mono tabular"
               style={{
                 fontSize: 11,
-                color: isActive ? 'var(--ink-2)' : 'var(--ink-4)',
+                color: isActive ? 'var(--ink-2)' : 'var(--ink-3)',
                 minWidth: 14,
                 textAlign: 'right',
               }}

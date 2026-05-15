@@ -1,7 +1,6 @@
 import { Fragment, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRightIcon, UploadIcon, WarnIcon } from '@/components/brand/icons'
-import { ConfMini } from '@/components/dashboard/ConfMini'
 import { StagePill } from '@/components/submissions/StagePill'
 import { useUpload } from '@/hooks/useUpload'
 import { useUploadContext } from '@/context/UploadContext'
@@ -120,7 +119,6 @@ export function InboxTable({
             <th>Address</th>
             <th>Dept.</th>
             {showStageColumn && <th>State</th>}
-            <th>Confidence</th>
             <th>Received</th>
             <th>Days</th>
             <th aria-label="Open" />
@@ -158,9 +156,6 @@ export function InboxTable({
                       <StagePill stage={p.stage} />
                     </td>
                   )}
-                  <td>
-                    <ConfMini value={p.confidence} />
-                  </td>
                   <td className="tabular" style={{ color: 'var(--ink-3)' }}>
                     {p.received}
                   </td>
@@ -181,7 +176,7 @@ export function InboxTable({
                 {isRejected && (
                   <tr>
                     <td
-                      colSpan={showStageColumn ? 9 : 8}
+                      colSpan={showStageColumn ? 8 : 7}
                       style={{
                         background: 'var(--danger-bg)',
                         padding: '10px 16px',

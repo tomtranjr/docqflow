@@ -141,10 +141,11 @@ export function Inbox() {
             maxWidth: 320,
             padding: '0 12px',
             height: 36,
-            border: '1px solid var(--line)',
+            border: '1px solid var(--line-2)',
             borderRadius: 'var(--r)',
             background: 'var(--surface-card)',
             minWidth: 200,
+            boxShadow: 'var(--shadow-1)',
           }}
         >
           <span style={{ color: 'var(--ink-3)' }}>
@@ -173,8 +174,9 @@ export function Inbox() {
           style={{
             display: 'flex',
             gap: 4,
-            padding: 3,
+            padding: 4,
             background: 'var(--surface-sunken)',
+            border: '1px solid var(--line-2)',
             borderRadius: 'var(--r)',
           }}
         >
@@ -193,14 +195,15 @@ export function Inbox() {
                 style={{
                   height: 28,
                   padding: '0 14px',
-                  border: 'none',
+                  border: isActive ? '1px solid var(--line-strong)' : '1px solid transparent',
                   cursor: 'pointer',
                   background: isActive ? 'var(--surface-card)' : 'transparent',
-                  color: isActive ? 'var(--ink)' : 'var(--ink-3)',
+                  color: isActive ? 'var(--ink)' : 'var(--ink-2)',
                   fontSize: 12,
-                  fontWeight: 500,
+                  fontWeight: isActive ? 600 : 500,
                   borderRadius: 6,
                   boxShadow: isActive ? 'var(--shadow-1)' : 'none',
+                  transition: 'background .12s var(--ease), color .12s var(--ease)',
                 }}
               >
                 {v.label}
